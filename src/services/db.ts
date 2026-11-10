@@ -134,11 +134,11 @@ export const BRANCHES: Branch[] = [
   }
 ];
 
-// Storage keys (v5 - Clean state with all roles and secure credentials)
-const KEY_USERS = 'csk_users_v5';
+// Storage keys (v6 - Clean state with full staff & manager leave integration)
+const KEY_USERS = 'csk_users_v6';
 const KEY_STAFF_ATTENDANCE = 'csk_staff_attendance_v5';
-const KEY_STAFF_PERMISSIONS = 'csk_staff_permissions_v5';
-const KEY_LEAVE_REQUESTS = 'csk_leave_requests_v5';
+const KEY_STAFF_PERMISSIONS = 'csk_staff_permissions_v6';
+const KEY_LEAVE_REQUESTS = 'csk_leave_requests_v7';
 const KEY_STUDENT_ATTENDANCE = 'csk_student_attendance_v5';
 const KEY_WORK_REPORTS = 'csk_work_reports_v5';
 const KEY_MANAGER_REPORTS = 'csk_manager_reports_v5';
@@ -260,9 +260,23 @@ const INITIAL_USERS: UserProfile[] = [
     name: 'Ramesh Kumar',
     phone: '9845012346',
     createdAt: '2026-01-05',
-    designation: 'Salem Branch Manager',
+    designation: 'Dadagapatty Branch Manager',
     branchId: 'dadagapatty',
     branchName: 'CSK Academy - Dadagapatty, Salem'
+  },
+  {
+    id: 'usr-mgr-2',
+    username: 'manager_kondalampatty',
+    managerId: 'MGR-002',
+    email: 'manager.kondalampatty@cskacademy.com',
+    password: 'manager123',
+    role: 'manager',
+    name: 'Suresh K',
+    phone: '9845012399',
+    createdAt: '2026-01-10',
+    designation: 'Kondalampatty Branch Manager',
+    branchId: 'kondalampatty',
+    branchName: 'CSK Academy - Kondalampatty Campus'
   },
   // 3. Staff Account (Senior Software Trainer)
   {
@@ -456,13 +470,13 @@ const INITIAL_STAFF_PERMISSIONS: StaffPermission[] = [
     durationHours: 1.5,
     reason: 'Personal family emergency',
     status: 'approved',
-    approvedBy: 'Branch Manager (Suresh K)',
+    approvedBy: 'Branch Manager (Ramesh Kumar)',
     timestamp: 1794206400000
   },
   {
     id: 'perm-3',
     staffId: 'usr-mgr-1',
-    staffName: 'Suresh K',
+    staffName: 'Ramesh Kumar',
     userRole: 'manager',
     branchId: 'dadagapatty',
     date: '2026-11-06',
@@ -474,6 +488,21 @@ const INITIAL_STAFF_PERMISSIONS: StaffPermission[] = [
     status: 'approved',
     approvedBy: 'Center Admin (Anand)',
     timestamp: 1793947200000
+  },
+  {
+    id: 'perm-4',
+    staffId: 'usr-mgr-2',
+    staffName: 'Suresh K',
+    userRole: 'manager',
+    branchId: 'kondalampatty',
+    date: '2026-11-11',
+    permissionType: 'morning_late',
+    startTime: '09:00 AM',
+    endTime: '10:30 AM',
+    durationHours: 1.5,
+    reason: 'Kondalampatty Bypass campus facility inspection with contractors',
+    status: 'pending',
+    timestamp: 1794379200000
   }
 ];
 
@@ -490,25 +519,24 @@ const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
     totalDays: 1,
     reason: 'Viral fever and doctor consultation',
     status: 'approved',
-    approvedBy: 'Branch Manager (Suresh K)',
+    approvedBy: 'Branch Manager (Ramesh Kumar)',
     appliedOn: '2026-10-17',
     timestamp: 1792305600000
   },
   {
     id: 'leave-2',
     userId: 'usr-mgr-1',
-    userName: 'Suresh K',
+    userName: 'Ramesh Kumar',
     userRole: 'manager',
     branchId: 'dadagapatty',
     leaveType: 'planned',
-    startDate: '2026-10-25',
-    endDate: '2026-10-25',
-    totalDays: 1,
-    reason: 'Family wedding function in Erode',
-    status: 'approved',
-    approvedBy: 'Center Admin (Anand)',
-    appliedOn: '2026-10-20',
-    timestamp: 1792910400000
+    startDate: '2026-11-20',
+    endDate: '2026-11-21',
+    totalDays: 2,
+    reason: 'Personal family event in Chennai',
+    status: 'pending',
+    appliedOn: '2026-11-09',
+    timestamp: 1794206400000
   },
   {
     id: 'leave-3',
@@ -521,6 +549,21 @@ const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
     endDate: '2026-11-14',
     totalDays: 1,
     reason: 'Attending Regional AI & Python Developers Conference',
+    status: 'pending',
+    appliedOn: '2026-11-09',
+    timestamp: 1794206400000
+  },
+  {
+    id: 'leave-4',
+    userId: 'usr-mgr-2',
+    userName: 'Suresh K',
+    userRole: 'manager',
+    branchId: 'kondalampatty',
+    leaveType: 'casual',
+    startDate: '2026-11-12',
+    endDate: '2026-11-12',
+    totalDays: 1,
+    reason: 'Urgent property registration and bank verification',
     status: 'pending',
     appliedOn: '2026-11-09',
     timestamp: 1794206400000

@@ -59,6 +59,13 @@ export const ManagerDashboard: React.FC = () => {
   const todayStudentAttendance = dbService.getStudentAttendance(undefined, todayDate, defaultBranch);
   const todayStaffReports = dbService.getWorkReports(todayDate, undefined, defaultBranch);
 
+  // Live branch leaves and permissions
+  const branchLeaves = dbService.getLeaves(undefined, defaultBranch, undefined, 'staff');
+  const branchPerms = dbService.getStaffPermissions(undefined, undefined, defaultBranch, 'staff');
+  const branchPendingLeaves = branchLeaves.filter(l => l.status === 'pending').length;
+  const branchPendingPerms = branchPerms.filter(p => p.status === 'pending').length;
+  const totalBranchPending = branchPendingLeaves + branchPendingPerms;
+
   // Compute pending fees in this branch
   let calculatedPendingFees = 0;
   let calculatedCollectedFees = 0;
@@ -560,6 +567,22 @@ export const ManagerDashboard: React.FC = () => {
             Staff Management ({branchStaff.length})
           </button>
           <button
+            onClick={() => setActiveTab('leave_permission')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'leave_permission'
+                ? 'bg-white text-amber-900 shadow-md'
+                : 'text-amber-100 hover:text-white'
+            }`}
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            Leaves & Permissions
+            {totalBranchPending > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
+                {totalBranchPending}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('courses')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'courses'
@@ -581,23 +604,48 @@ export const ManagerDashboard: React.FC = () => {
             <GraduationCap className="w-3.5 h-3.5" />
             Branch Students & Fees ({branchStudents.length})
           </button>
-          <button
-            onClick={() => setActiveTab('leave_permission')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'leave_permission'
-                ? 'bg-white text-amber-900 shadow-md'
-                : 'text-amber-100 hover:text-white'
-            }`}
-          >
-            <Ticket className="w-3.5 h-3.5" />
-            Leaves & Permissions
-          </button>
         </div>
       </div>
 
       {/* TAB 1: MANAGER DAILY WORK REPORT */}
       {activeTab === 'daily_report' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
+          {/* Leaves & Permissions Quick Access Banner for Manager */}
+          <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 rounded-3xl p-4 sm:p-5 text-white border border-purple-500/20 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-500/20 border border-purple-400/30 rounded-2xl text-purple-300 shrink-0">
+                <Ticket className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-extrabold text-sm text-white">Branch Leaves & Permissions</h4>
+                  {totalBranchPending > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-slate-950">
+                      {totalBranchPending} Staff Request{totalBranchPending > 1 ? 's' : ''} Pending Review
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                      Up to Date
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-purple-200/80 mt-0.5">
+                  Review & approve branch staff leaves or apply for your manager personal leaves and shift permissions.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setActiveTab('leave_permission')}
+                className="py-2.5 px-4 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold rounded-xl text-xs shadow-md shadow-purple-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>Open Leaves & Permissions →</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left col: Manager Shift Attendance Card & Branch Stats Summary */}
           <div className="lg:col-span-1 space-y-6">
             <StaffAttendanceCard
@@ -973,6 +1021,7 @@ export const ManagerDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+        </div>
       )}
 
       {/* TAB 2: STAFF MANAGEMENT ("manager create staff") */}
@@ -990,12 +1039,26 @@ export const ManagerDashboard: React.FC = () => {
               />
             </div>
 
-            <button
-              onClick={() => setShowAddStaffModal(true)}
-              className="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-amber-600/20 transition-all"
-            >
-              <Plus className="w-4 h-4" /> Add Staff Member
-            </button>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => setActiveTab('leave_permission')}
+                className="flex-1 sm:flex-none px-3.5 py-2 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/20 transition-all cursor-pointer"
+              >
+                <Ticket className="w-4 h-4" /> Staff Leaves & Permissions
+                {totalBranchPending > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white">
+                    {totalBranchPending}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowAddStaffModal(true)}
+                className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-amber-600/20 transition-all"
+              >
+                <Plus className="w-4 h-4" /> Add Staff Member
+              </button>
+            </div>
           </div>
 
           {/* Staff members list */}

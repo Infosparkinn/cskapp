@@ -53,6 +53,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
   const [directorySearch, setDirectorySearch] = useState('');
   const [stats, setStats] = useState<CenterStats>(dbService.getStats(currentBranch, selectedMonth !== 'all' ? selectedMonth : undefined));
 
+  // Leaves & Permissions Executive Overview Stats
+  const branchFilter = currentBranch as BranchId | 'all';
+  const allOverviewLeaves = dbService.getLeaves(undefined, branchFilter, selectedMonth !== 'all' ? selectedMonth : undefined, 'all');
+  const allOverviewPerms = dbService.getStaffPermissions(undefined, selectedMonth !== 'all' ? selectedMonth : undefined, branchFilter, 'all');
+  const pendingLeavesCount = allOverviewLeaves.filter(l => l.status === 'pending').length;
+  const pendingPermsCount = allOverviewPerms.filter(p => p.status === 'pending').length;
+
   // Courses & Internships Management State ("all course create should be editable like i can alter whever manager can")
   const allCourses = dbService.getCourses(currentBranch);
   const [courseSearch, setCourseSearch] = useState('');
@@ -598,6 +605,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
               color="rose"
               onClick={() => setActiveTab('students')}
             />
+          </div>
+
+          {/* Executive Leaves & Permissions Control Banner */}
+          <div className="bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 rounded-3xl p-5 text-white border border-purple-500/20 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 bg-purple-500/20 border border-purple-400/30 rounded-2xl text-purple-300">
+                <Ticket className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-extrabold text-base text-white">Staff & Manager Leaves & Permissions Portal</h4>
+                  {pendingLeavesCount + pendingPermsCount > 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 uppercase tracking-wide animate-pulse">
+                      {pendingLeavesCount + pendingPermsCount} Action Required
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 uppercase tracking-wide">
+                      All Approved
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-purple-200/80 mt-1">
+                  Active in {selectedMonth !== 'all' ? selectedMonth : 'all months'}: <strong>{allOverviewLeaves.length} leaves</strong> ({allOverviewLeaves.reduce((a, b) => a + (Number(b.totalDays) || 1), 0)} days) • <strong>{allOverviewPerms.length} permissions</strong> ({allOverviewPerms.reduce((a, b) => a + (Number(b.durationHours) || 0), 0)} hrs) across branch managers & staff.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 self-end md:self-auto shrink-0">
+              <button
+                onClick={() => setActiveTab('leaves_permissions')}
+                className="py-2.5 px-4 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold rounded-2xl text-xs flex items-center gap-1.5 shadow-md shadow-purple-600/30 transition-all cursor-pointer"
+              >
+                <span>Manage Staff & Manager Leaves →</span>
+              </button>
+            </div>
           </div>
 
           {/* 4 Salem Branches Snapshot Cards */}
