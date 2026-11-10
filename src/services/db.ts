@@ -486,7 +486,7 @@ const INITIAL_STAFF_PERMISSIONS: StaffPermission[] = [
     durationHours: 2.0,
     reason: 'Meeting with Salem District Education Officials for Campus Approval',
     status: 'approved',
-    approvedBy: 'Center Admin (Anand)',
+    approvedBy: 'Center Admin',
     timestamp: 1793947200000
   },
   {
@@ -980,6 +980,18 @@ export const dbService = {
   // STAFF & MANAGER PERMISSIONS
   getStaffPermissions(staffId?: string, month?: string, branchId?: BranchId | 'all', role?: 'staff' | 'manager' | 'all'): StaffPermission[] {
     let list = loadFromStorage<StaffPermission[]>(KEY_STAFF_PERMISSIONS, INITIAL_STAFF_PERMISSIONS);
+    let dirty = false;
+    list = list.map(p => {
+      if (p.approvedBy && p.approvedBy.includes('(Anand)')) {
+        dirty = true;
+        return { ...p, approvedBy: p.approvedBy.replace(/\s*\(Anand\)/gi, '').trim() };
+      }
+      return p;
+    });
+    if (dirty) {
+      saveToStorage(KEY_STAFF_PERMISSIONS, list);
+    }
+
     if (staffId && staffId !== 'all') {
       list = list.filter(p => p.staffId === staffId);
     }
@@ -1006,7 +1018,7 @@ export const dbService = {
   addStaffPermission(perm: Omit<StaffPermission, 'id' | 'timestamp'>): StaffPermission {
     const list = loadFromStorage<StaffPermission[]>(KEY_STAFF_PERMISSIONS, INITIAL_STAFF_PERMISSIONS);
     const user = this.getUserById(perm.staffId);
-    const resolvedRole = perm.userRole || user?.role === 'manager' ? 'manager' : 'staff';
+    const resolvedRole = perm.userRole || (user?.role === 'manager' ? 'manager' : 'staff');
     const newRecord: StaffPermission = {
       ...perm,
       userRole: resolvedRole as 'staff' | 'manager',
@@ -1036,7 +1048,9 @@ export const dbService = {
     const existing = list.find(p => p.id === id);
     if (!existing) return null;
     existing.status = status;
-    if (approvedBy) existing.approvedBy = approvedBy;
+    if (approvedBy) {
+      existing.approvedBy = approvedBy.replace(/\s*\(Anand\)/gi, '').trim();
+    }
     saveToStorage(KEY_STAFF_PERMISSIONS, list);
     syncDocumentToCloud('staff_permissions', existing.id, existing);
     return existing;
@@ -1045,6 +1059,18 @@ export const dbService = {
   // STAFF & MANAGER LEAVES
   getLeaves(userId?: string, branchId?: BranchId | 'all', month?: string, role?: 'staff' | 'manager' | 'all'): LeaveRequest[] {
     let list = loadFromStorage<LeaveRequest[]>(KEY_LEAVE_REQUESTS, INITIAL_LEAVE_REQUESTS);
+    let dirty = false;
+    list = list.map(l => {
+      if (l.approvedBy && l.approvedBy.includes('(Anand)')) {
+        dirty = true;
+        return { ...l, approvedBy: l.approvedBy.replace(/\s*\(Anand\)/gi, '').trim() };
+      }
+      return l;
+    });
+    if (dirty) {
+      saveToStorage(KEY_LEAVE_REQUESTS, list);
+    }
+
     if (userId && userId !== 'all') {
       list = list.filter(l => l.userId === userId);
     }
@@ -1086,7 +1112,9 @@ export const dbService = {
     const existing = list.find(l => l.id === id);
     if (!existing) return null;
     existing.status = status;
-    if (approvedBy) existing.approvedBy = approvedBy;
+    if (approvedBy) {
+      existing.approvedBy = approvedBy.replace(/\s*\(Anand\)/gi, '').trim();
+    }
     saveToStorage(KEY_LEAVE_REQUESTS, list);
     syncDocumentToCloud('leave_requests', existing.id, existing);
     return existing;

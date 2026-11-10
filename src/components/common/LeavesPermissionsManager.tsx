@@ -120,9 +120,25 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
     ? allUsers.filter(u => u.branchId === managerBranchId || u.id === currentUserId)
     : allUsers;
 
+  // Approval check:
+  // - Admin only can approve/reject for branch managers
+  // - For staff, both branch manager and admin can approve
+  const canApprove = (targetRole?: 'staff' | 'manager') => {
+    if (targetRole === 'manager') {
+      return viewerRole === 'admin';
+    }
+    return viewerRole === 'admin' || viewerRole === 'manager';
+  };
+
   // Approve / Reject Handlers
-  const handleApproveLeave = (id: string) => {
-    const approverText = viewerRole === 'admin' ? 'Center Admin (Anand)' : `Branch Manager (${currentUserName || 'Manager'})`;
+  // Rule: Admin only can approve for branch manager; For staff, both manager and admin can approve.
+  // Rule: Remove "(Anand)" when approved by admin -> always "Center Admin"
+  const handleApproveLeave = (id: string, targetRole?: 'staff' | 'manager') => {
+    if (targetRole === 'manager' && viewerRole !== 'admin') {
+      alert('Branch Manager leave requests can only be approved by the Center Admin.');
+      return;
+    }
+    const approverText = viewerRole === 'admin' ? 'Center Admin' : 'Branch Manager';
     dbService.updateLeaveStatus(id, 'approved', approverText);
     setActionSuccess('Leave request approved successfully!');
     loadData();
@@ -130,8 +146,12 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
-  const handleRejectLeave = (id: string) => {
-    const approverText = viewerRole === 'admin' ? 'Center Admin (Anand)' : `Branch Manager (${currentUserName || 'Manager'})`;
+  const handleRejectLeave = (id: string, targetRole?: 'staff' | 'manager') => {
+    if (targetRole === 'manager' && viewerRole !== 'admin') {
+      alert('Branch Manager leave requests can only be rejected by the Center Admin.');
+      return;
+    }
+    const approverText = viewerRole === 'admin' ? 'Center Admin' : 'Branch Manager';
     dbService.updateLeaveStatus(id, 'rejected', approverText);
     setActionSuccess('Leave request marked as rejected.');
     loadData();
@@ -139,8 +159,12 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
-  const handleApprovePerm = (id: string) => {
-    const approverText = viewerRole === 'admin' ? 'Center Admin (Anand)' : `Branch Manager (${currentUserName || 'Manager'})`;
+  const handleApprovePerm = (id: string, targetRole?: 'staff' | 'manager') => {
+    if (targetRole === 'manager' && viewerRole !== 'admin') {
+      alert('Branch Manager permission requests can only be approved by the Center Admin.');
+      return;
+    }
+    const approverText = viewerRole === 'admin' ? 'Center Admin' : 'Branch Manager';
     dbService.updateStaffPermissionStatus(id, 'approved', approverText);
     setActionSuccess('Permission approved successfully!');
     loadData();
@@ -148,8 +172,12 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
-  const handleRejectPerm = (id: string) => {
-    const approverText = viewerRole === 'admin' ? 'Center Admin (Anand)' : `Branch Manager (${currentUserName || 'Manager'})`;
+  const handleRejectPerm = (id: string, targetRole?: 'staff' | 'manager') => {
+    if (targetRole === 'manager' && viewerRole !== 'admin') {
+      alert('Branch Manager permission requests can only be rejected by the Center Admin.');
+      return;
+    }
+    const approverText = viewerRole === 'admin' ? 'Center Admin' : 'Branch Manager';
     dbService.updateStaffPermissionStatus(id, 'rejected', approverText);
     setActionSuccess('Permission marked as rejected.');
     loadData();
@@ -166,21 +194,30 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
       return;
     }
 
+    const isManagerApplicant = targetUser.role === 'manager';
+    // When Admin creates, it is pre-approved by Center Admin. When Manager or Staff applies, it is PENDING!
+    const initialStatus = viewerRole === 'admin' ? 'approved' : 'pending';
+    const approvedByText = viewerRole === 'admin' ? 'Center Admin' : undefined;
+
     dbService.addLeave({
       userId: targetUser.id,
       userName: targetUser.name,
-      userRole: targetUser.role === 'manager' ? 'manager' : 'staff',
+      userRole: isManagerApplicant ? 'manager' : 'staff',
       branchId: targetUser.branchId || managerBranchId,
       leaveType,
       startDate: leaveStartDate,
       endDate: leaveEndDate,
       totalDays: Number(leaveDays) || 1,
       reason: leaveReason.trim() || 'Personal Leave',
-      status: viewerRole === 'admin' ? 'approved' : 'approved',
-      approvedBy: viewerRole === 'admin' ? 'Center Admin' : 'Branch Manager'
+      status: initialStatus,
+      approvedBy: approvedByText
     });
 
-    setActionSuccess(`Leave for ${targetUser.name} submitted successfully!`);
+    setActionSuccess(
+      isManagerApplicant && viewerRole === 'manager'
+        ? 'Manager leave request submitted! Awaiting Center Admin approval.'
+        : `Leave for ${targetUser.name} submitted successfully!`
+    );
     setShowLeaveModal(false);
     setLeaveReason('');
     loadData();
@@ -197,10 +234,15 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
       return;
     }
 
+    const isManagerApplicant = targetUser.role === 'manager';
+    // When Admin creates, it is pre-approved by Center Admin. When Manager or Staff applies, it is PENDING!
+    const initialStatus = viewerRole === 'admin' ? 'approved' : 'pending';
+    const approvedByText = viewerRole === 'admin' ? 'Center Admin' : undefined;
+
     dbService.addStaffPermission({
       staffId: targetUser.id,
       staffName: targetUser.name,
-      userRole: targetUser.role === 'manager' ? 'manager' : 'staff',
+      userRole: isManagerApplicant ? 'manager' : 'staff',
       branchId: targetUser.branchId || managerBranchId,
       date: permDate,
       permissionType: permType,
@@ -208,11 +250,15 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
       endTime: permEndTime,
       durationHours: parseFloat(permDuration) || 1,
       reason: permReason.trim() || 'General Permission',
-      status: viewerRole === 'admin' ? 'approved' : 'approved',
-      approvedBy: viewerRole === 'admin' ? 'Center Admin' : 'Branch Manager'
+      status: initialStatus,
+      approvedBy: approvedByText
     });
 
-    setActionSuccess(`Permission for ${targetUser.name} logged successfully!`);
+    setActionSuccess(
+      isManagerApplicant && viewerRole === 'manager'
+        ? 'Manager permission request submitted! Awaiting Center Admin approval.'
+        : `Permission for ${targetUser.name} logged successfully!`
+    );
     setShowPermissionModal(false);
     setPermReason('');
     loadData();
@@ -632,20 +678,26 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
                       <span className="text-[10px] font-mono text-slate-400">Ref: {leave.id}</span>
                       
                       {leave.status === 'pending' ? (
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleApproveLeave(leave.id)}
-                            className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-xs"
-                          >
-                            <Check className="w-3.5 h-3.5" /> Approve
-                          </button>
-                          <button
-                            onClick={() => handleRejectLeave(leave.id)}
-                            className="py-1.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-xs"
-                          >
-                            <X className="w-3.5 h-3.5" /> Reject
-                          </button>
-                        </div>
+                        canApprove(leave.userRole) ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleApproveLeave(leave.id, leave.userRole)}
+                              className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <Check className="w-3.5 h-3.5" /> Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectLeave(leave.id, leave.userRole)}
+                              className="py-1.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" /> Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-600" /> Awaiting Admin Approval
+                          </span>
+                        )
                       ) : (
                         <span className="text-[11px] text-slate-500 font-medium">
                           Decision recorded
@@ -747,20 +799,26 @@ export const LeavesPermissionsManager: React.FC<LeavesPermissionsManagerProps> =
                       <span className="text-[10px] font-mono text-slate-400">Ref: {perm.id}</span>
                       
                       {perm.status === 'pending' ? (
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleApprovePerm(perm.id)}
-                            className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-xs"
-                          >
-                            <Check className="w-3.5 h-3.5" /> Approve
-                          </button>
-                          <button
-                            onClick={() => handleRejectPerm(perm.id)}
-                            className="py-1.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-xs"
-                          >
-                            <X className="w-3.5 h-3.5" /> Reject
-                          </button>
-                        </div>
+                        canApprove(perm.userRole) ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleApprovePerm(perm.id, perm.userRole)}
+                              className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <Check className="w-3.5 h-3.5" /> Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectPerm(perm.id, perm.userRole)}
+                              className="py-1.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" /> Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-600" /> Awaiting Admin Approval
+                          </span>
+                        )
                       ) : (
                         <span className="text-[11px] text-slate-500 font-medium">
                           Decision recorded
