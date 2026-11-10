@@ -1,6 +1,7 @@
 import type { 
   UserProfile, 
   StaffAttendance, 
+  StaffPermission,
   StudentAttendance, 
   DailyWorkReport,
   ManagerDailyReport,
@@ -31,6 +32,33 @@ export function getCurrentTime(): string {
     minute: '2-digit',
     hour12: true
   });
+}
+
+export function calculateShiftHours(loginTime?: string, logoutTime?: string): string {
+  if (!loginTime) return '--:--';
+  if (!logoutTime) return 'In Progress';
+  try {
+    const parseTime = (t: string) => {
+      const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!match) return null;
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const ampm = match[3].toUpperCase();
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      return hours * 60 + minutes;
+    };
+    const inMins = parseTime(loginTime);
+    const outMins = parseTime(logoutTime);
+    if (inMins === null || outMins === null) return 'Logged Out';
+    let diff = outMins - inMins;
+    if (diff < 0) diff += 24 * 60; // crossed midnight
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    return `${h}h ${m}m`;
+  } catch {
+    return 'Completed';
+  }
 }
 
 // Calculate total teaching done summary for the day (e.g. "AI-1, C/C++-2")
@@ -107,6 +135,7 @@ export const BRANCHES: Branch[] = [
 // Storage keys (v5 - Clean state with all roles and secure credentials)
 const KEY_USERS = 'csk_users_v5';
 const KEY_STAFF_ATTENDANCE = 'csk_staff_attendance_v5';
+const KEY_STAFF_PERMISSIONS = 'csk_staff_permissions_v5';
 const KEY_STUDENT_ATTENDANCE = 'csk_student_attendance_v5';
 const KEY_WORK_REPORTS = 'csk_work_reports_v5';
 const KEY_MANAGER_REPORTS = 'csk_manager_reports_v5';
@@ -288,8 +317,145 @@ const INITIAL_USERS: UserProfile[] = [
   }
 ];
 
-// Clean empty arrays for attendance and work reports
-const INITIAL_STAFF_ATTENDANCE: StaffAttendance[] = [];
+// Initial realistic staff attendance records for demo/testing
+const INITIAL_STAFF_ATTENDANCE: StaffAttendance[] = [
+  {
+    id: 'att-nov-10',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-10',
+    loginTime: '09:15 AM',
+    logoutTime: '06:20 PM',
+    totalHours: '9h 05m',
+    status: 'present',
+    timestamp: 1794292800000
+  },
+  {
+    id: 'att-nov-09',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-09',
+    loginTime: '09:12 AM',
+    logoutTime: '05:00 PM',
+    totalHours: '7h 48m',
+    status: 'present',
+    hasPermission: true,
+    permissionHours: 1.5,
+    permissionReason: 'Personal family emergency (1.5 hrs early exit)',
+    timestamp: 1794206400000
+  },
+  {
+    id: 'att-nov-07',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-07',
+    loginTime: '09:30 AM',
+    logoutTime: '04:30 PM',
+    totalHours: '7h 00m',
+    status: 'present',
+    timestamp: 1794033600000
+  },
+  {
+    id: 'att-nov-06',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-06',
+    loginTime: '09:20 AM',
+    logoutTime: '06:30 PM',
+    totalHours: '9h 10m',
+    status: 'present',
+    timestamp: 1793947200000
+  },
+  {
+    id: 'att-nov-05',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-05',
+    loginTime: '09:10 AM',
+    logoutTime: '06:15 PM',
+    totalHours: '9h 05m',
+    status: 'present',
+    timestamp: 1793860800000
+  },
+  {
+    id: 'att-nov-04',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-04',
+    loginTime: '10:30 AM',
+    logoutTime: '06:30 PM',
+    totalHours: '8h 00m',
+    status: 'present',
+    hasPermission: true,
+    permissionHours: 1.5,
+    permissionReason: 'Bank work - Educational certificate verification (1.5 hrs late entry)',
+    timestamp: 1793774400000
+  },
+  {
+    id: 'att-nov-03',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-03',
+    loginTime: '09:18 AM',
+    logoutTime: '06:22 PM',
+    totalHours: '9h 04m',
+    status: 'present',
+    timestamp: 1793688000000
+  },
+  {
+    id: 'att-nov-02',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-02',
+    loginTime: '09:15 AM',
+    logoutTime: '06:18 PM',
+    totalHours: '9h 03m',
+    status: 'present',
+    timestamp: 1793601600000
+  }
+];
+
+const INITIAL_STAFF_PERMISSIONS: StaffPermission[] = [
+  {
+    id: 'perm-1',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-04',
+    permissionType: 'morning_late',
+    startTime: '09:00 AM',
+    endTime: '10:30 AM',
+    durationHours: 1.5,
+    reason: 'Bank work - Educational certificate verification',
+    status: 'approved',
+    approvedBy: 'Branch Manager (Suresh K)',
+    timestamp: 1793774400000
+  },
+  {
+    id: 'perm-2',
+    staffId: 'usr-stf-1',
+    staffName: 'Kavitha R',
+    branchId: 'dadagapatty',
+    date: '2026-11-09',
+    permissionType: 'evening_early',
+    startTime: '05:00 PM',
+    endTime: '06:30 PM',
+    durationHours: 1.5,
+    reason: 'Personal family emergency',
+    status: 'approved',
+    approvedBy: 'Branch Manager (Suresh K)',
+    timestamp: 1794206400000
+  }
+];
+
 const INITIAL_WORK_REPORTS: DailyWorkReport[] = [];
 const INITIAL_STUDENT_ATTENDANCE: StudentAttendance[] = [];
 const INITIAL_MANAGER_REPORTS: ManagerDailyReport[] = [];
@@ -641,9 +807,107 @@ export const dbService = {
     if (!existing) return null;
 
     existing.logoutTime = nowTime;
-    existing.totalHours = 'Logged Out at ' + nowTime;
+    existing.totalHours = calculateShiftHours(existing.loginTime, nowTime);
     saveToStorage(KEY_STAFF_ATTENDANCE, list);
     syncDocumentToCloud('staff_attendance', existing.id, existing);
+    return existing;
+  },
+
+  // STAFF ATTENDANCE STATS & DETAILS
+  getStaffAttendanceStats(staffId: string, month?: string) {
+    const list = this.getStaffAttendance(undefined, undefined, month).filter(a => a.staffId === staffId);
+    const permissions = this.getStaffPermissions(staffId, month);
+    
+    const totalDaysPresent = list.filter(a => a.status === 'present' || a.status === 'permission' || (a.loginTime && a.status !== 'absent')).length;
+    const totalHalfDays = list.filter(a => a.status === 'half_day').length;
+    const totalAbsents = list.filter(a => a.status === 'absent').length;
+    
+    const totalPermissionCount = permissions.length;
+    const totalPermissionHours = permissions.reduce((acc, p) => acc + (Number(p.durationHours) || 0), 0);
+    
+    let totalMinutesWorked = 0;
+    list.forEach(item => {
+      if (item.loginTime && item.logoutTime) {
+        const sh = calculateShiftHours(item.loginTime, item.logoutTime);
+        const match = sh.match(/(\d+)h\s*(\d+)m/);
+        if (match) {
+          totalMinutesWorked += parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+        } else {
+          totalMinutesWorked += 8 * 60;
+        }
+      } else if (item.loginTime) {
+        totalMinutesWorked += 8 * 60;
+      }
+    });
+
+    const hours = Math.floor(totalMinutesWorked / 60);
+    const mins = totalMinutesWorked % 60;
+    const totalHoursFormatted = `${hours}h ${mins}m`;
+
+    return {
+      totalDaysPresent,
+      totalHalfDays,
+      totalAbsents,
+      totalPermissionCount,
+      totalPermissionHours,
+      totalHoursFormatted,
+      attendanceList: list,
+      permissionsList: permissions
+    };
+  },
+
+  // STAFF PERMISSIONS
+  getStaffPermissions(staffId?: string, month?: string, branchId?: BranchId | 'all'): StaffPermission[] {
+    let list = loadFromStorage<StaffPermission[]>(KEY_STAFF_PERMISSIONS, INITIAL_STAFF_PERMISSIONS);
+    if (staffId && staffId !== 'all') {
+      list = list.filter(p => p.staffId === staffId);
+    }
+    if (month && month !== 'all') {
+      list = list.filter(p => p.date.startsWith(month));
+    }
+    if (branchId && branchId !== 'all') {
+      list = list.filter(p => {
+        if (p.branchId) return p.branchId === branchId;
+        const u = this.getUserById(p.staffId);
+        return u?.branchId === branchId;
+      });
+    }
+    return list;
+  },
+
+  addStaffPermission(perm: Omit<StaffPermission, 'id' | 'timestamp'>): StaffPermission {
+    const list = loadFromStorage<StaffPermission[]>(KEY_STAFF_PERMISSIONS, INITIAL_STAFF_PERMISSIONS);
+    const newRecord: StaffPermission = {
+      ...perm,
+      id: 'perm-' + Date.now(),
+      timestamp: Date.now()
+    };
+    list.unshift(newRecord);
+    saveToStorage(KEY_STAFF_PERMISSIONS, list);
+    syncDocumentToCloud('staff_permissions', newRecord.id, newRecord);
+
+    // Link with staff attendance if record for this date exists
+    const attList = loadFromStorage<StaffAttendance[]>(KEY_STAFF_ATTENDANCE, INITIAL_STAFF_ATTENDANCE);
+    const existingAtt = attList.find(a => a.staffId === perm.staffId && a.date === perm.date);
+    if (existingAtt) {
+      existingAtt.hasPermission = true;
+      existingAtt.permissionHours = perm.durationHours;
+      existingAtt.permissionReason = perm.reason;
+      saveToStorage(KEY_STAFF_ATTENDANCE, attList);
+      syncDocumentToCloud('staff_attendance', existingAtt.id, existingAtt);
+    }
+
+    return newRecord;
+  },
+
+  updateStaffPermissionStatus(id: string, status: 'approved' | 'rejected', approvedBy?: string): StaffPermission | null {
+    const list = loadFromStorage<StaffPermission[]>(KEY_STAFF_PERMISSIONS, INITIAL_STAFF_PERMISSIONS);
+    const existing = list.find(p => p.id === id);
+    if (!existing) return null;
+    existing.status = status;
+    if (approvedBy) existing.approvedBy = approvedBy;
+    saveToStorage(KEY_STAFF_PERMISSIONS, list);
+    syncDocumentToCloud('staff_permissions', existing.id, existing);
     return existing;
   },
 
@@ -898,6 +1162,10 @@ export const dbService = {
       if (cloudStaffAtt && cloudStaffAtt.length > 0) {
         saveToStorage(KEY_STAFF_ATTENDANCE, cloudStaffAtt);
       }
+      const cloudStaffPerms = await fetchCollectionFromCloud('staff_permissions');
+      if (cloudStaffPerms && cloudStaffPerms.length > 0) {
+        saveToStorage(KEY_STAFF_PERMISSIONS, cloudStaffPerms);
+      }
       const cloudStudentAtt = await fetchCollectionFromCloud('student_attendance');
       if (cloudStudentAtt && cloudStudentAtt.length > 0) {
         saveToStorage(KEY_STUDENT_ATTENDANCE, cloudStudentAtt);
@@ -938,6 +1206,13 @@ export const dbService = {
     const unsubStaffAtt = subscribeToCloudCollection('staff_attendance', (cloudStaffAtt) => {
       if (cloudStaffAtt && cloudStaffAtt.length > 0) {
         localStorage.setItem(KEY_STAFF_ATTENDANCE, JSON.stringify(cloudStaffAtt));
+        window.dispatchEvent(new Event('educenter-db-change'));
+      }
+    });
+
+    const unsubStaffPerms = subscribeToCloudCollection('staff_permissions', (cloudStaffPerms) => {
+      if (cloudStaffPerms && cloudStaffPerms.length > 0) {
+        localStorage.setItem(KEY_STAFF_PERMISSIONS, JSON.stringify(cloudStaffPerms));
         window.dispatchEvent(new Event('educenter-db-change'));
       }
     });

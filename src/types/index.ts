@@ -77,7 +77,28 @@ export interface StaffAttendance {
   loginTime: string; // e.g. 09:30 AM
   logoutTime?: string; // e.g. 06:15 PM
   totalHours?: string;
-  status: 'present' | 'half_day' | 'absent';
+  status: 'present' | 'half_day' | 'absent' | 'permission';
+  hasPermission?: boolean;
+  permissionHours?: number;
+  permissionReason?: string;
+  timestamp: number;
+}
+
+export type StaffPermissionType = 'morning_late' | 'evening_early' | 'mid_day' | 'emergency' | 'personal';
+
+export interface StaffPermission {
+  id: string;
+  staffId: string;
+  staffName: string;
+  branchId?: BranchId;
+  date: string; // YYYY-MM-DD
+  permissionType: StaffPermissionType;
+  startTime: string; // e.g. 09:30 AM
+  endTime: string;   // e.g. 11:00 AM
+  durationHours: number; // e.g. 1, 1.5, 2
+  reason: string;
+  status: 'approved' | 'pending' | 'rejected';
+  approvedBy?: string;
   timestamp: number;
 }
 

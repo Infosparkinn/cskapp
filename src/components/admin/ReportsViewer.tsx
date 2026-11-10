@@ -162,13 +162,15 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
       'Shift Login Time',
       'Shift Logout Time',
       'Total Hours / Shift Log',
-      'Attendance Status'
+      'Attendance Status',
+      'Permission Details'
     ];
     const rows = staffAttendance.map(a => {
       const u = dbService.getUserById(a.staffId);
       const b = BRANCHES.find(br => br.id === (a.branchId || u?.branchId));
       const isManager = u?.role === 'manager' || a.staffName.toLowerCase().includes('manager');
       const roleText = isManager ? 'Branch Manager' : (u?.designation || 'Staff / Faculty');
+      const permText = a.hasPermission || a.permissionReason ? `Permission: ${a.permissionReason} (${a.permissionHours || 1.5} hrs)` : 'None';
 
       return [
         a.id,
@@ -181,7 +183,8 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
         a.loginTime || '--:--',
         a.logoutTime || '--:--',
         a.totalHours || (a.status === 'present' ? 'Shift Active / Present' : 'Absent'),
-        a.status === 'present' ? 'Present' : (a.status || 'Present')
+        a.status === 'present' ? 'Present' : (a.status || 'Present'),
+        permText
       ];
     });
 
@@ -641,6 +644,12 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
                           {u?.phone && <span>Phone: <strong className="text-slate-700 font-mono">{u.phone}</strong></span>}
                           {u?.email && <span>Email: <strong className="text-slate-700">{u.email}</strong></span>}
                         </div>
+
+                        {(att.hasPermission || att.permissionReason) && (
+                          <div className="mt-1 p-2 bg-purple-50 border border-purple-200/80 rounded-xl text-[11px] text-purple-900">
+                            <strong>🎫 Permission Taken:</strong> {att.permissionReason} ({att.permissionHours || 1.5} hrs)
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3 sm:text-right shrink-0">

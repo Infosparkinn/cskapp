@@ -15,9 +15,15 @@ interface StaffAttendanceCardProps {
   staffId: string;
   staffName: string;
   branchId?: BranchId;
+  onViewDetailedAttendance?: () => void;
 }
 
-export const StaffAttendanceCard: React.FC<StaffAttendanceCardProps> = ({ staffId, staffName, branchId }) => {
+export const StaffAttendanceCard: React.FC<StaffAttendanceCardProps> = ({ 
+  staffId, 
+  staffName, 
+  branchId,
+  onViewDetailedAttendance
+}) => {
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
   const [todayRecord, setTodayRecord] = useState<StaffAttendance | undefined>(() => 
     dbService.getStaffTodayAttendance(staffId)
@@ -163,6 +169,15 @@ export const StaffAttendanceCard: React.FC<StaffAttendanceCardProps> = ({ staffI
           <History className="w-4 h-4" />
         </button>
       </div>
+
+      {onViewDetailedAttendance && (
+        <button
+          onClick={onViewDetailedAttendance}
+          className="w-full mt-3 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-blue-200/60"
+        >
+          <Calendar className="w-3.5 h-3.5" /> View Days Present & Permission Details ➔
+        </button>
+      )}
 
       {/* History Drawer */}
       {showHistory && (

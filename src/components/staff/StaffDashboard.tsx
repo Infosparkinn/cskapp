@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { StaffAttendanceCard } from './StaffAttendanceCard';
+import { StaffAttendanceView } from './StaffAttendanceView';
 import { StaffDailyReportForm } from './StaffDailyReportForm';
 import { 
   User, 
@@ -20,14 +21,16 @@ import {
   ChevronDown,
   Plus,
   X,
-  Check
+  Check,
+  Calendar,
+  Ticket
 } from 'lucide-react';
 import { dbService, BRANCHES, getTodayDate } from '../../services/db';
 import type { BranchId, UserProfile } from '../../types';
 
 export const StaffDashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const [activeStaffTab, setActiveStaffTab] = useState<'work' | 'students'>('work');
+  const [activeStaffTab, setActiveStaffTab] = useState<'work' | 'attendance' | 'students'>('work');
   
   // Branch-wise student view state
   const defaultBranch: BranchId = currentUser?.branchId || 'dadagapatty';
@@ -171,8 +174,8 @@ export const StaffDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab switcher: Daily Work vs Branch Students */}
-        <div className="relative z-10 mt-5 flex items-center gap-1 bg-white/10 p-1.5 rounded-2xl max-w-fit border border-white/15">
+        {/* Tab switcher: Daily Work vs Attendance vs Branch Students */}
+        <div className="relative z-10 mt-5 flex items-center gap-1 bg-white/10 p-1.5 rounded-2xl max-w-fit border border-white/15 flex-wrap">
           <button
             onClick={() => setActiveStaffTab('work')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
@@ -181,7 +184,18 @@ export const StaffDashboard: React.FC = () => {
                 : 'text-blue-100 hover:text-white'
             }`}
           >
-            Daily Work & Attendance
+            Daily Work & Shift Punch
+          </button>
+          <button
+            onClick={() => setActiveStaffTab('attendance')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeStaffTab === 'attendance' 
+                ? 'bg-white text-blue-900 shadow-md' 
+                : 'text-blue-100 hover:text-white'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            My Attendance & Permissions
           </button>
           <button
             onClick={() => setActiveStaffTab('students')}
@@ -205,6 +219,7 @@ export const StaffDashboard: React.FC = () => {
               staffId={currentUser.id} 
               staffName={currentUser.name} 
               branchId={currentUser.branchId}
+              onViewDetailedAttendance={() => setActiveStaffTab('attendance')}
             />
 
             {/* Branch Details Box */}
@@ -231,6 +246,13 @@ export const StaffDashboard: React.FC = () => {
             />
           </div>
         </div>
+      ) : activeStaffTab === 'attendance' ? (
+        /* Dedicated Staff Attendance & Permissions Details */
+        <StaffAttendanceView
+          staffId={currentUser.id}
+          staffName={currentUser.name}
+          branchId={currentUser.branchId}
+        />
       ) : (
         /* Branch-wise Student Details View for Staff */
         <div className="space-y-4">
