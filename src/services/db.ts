@@ -2,6 +2,8 @@ import type {
   UserProfile, 
   StaffAttendance, 
   StaffPermission,
+  LeaveRequest,
+  LeaveType,
   StudentAttendance, 
   DailyWorkReport,
   ManagerDailyReport,
@@ -136,6 +138,7 @@ export const BRANCHES: Branch[] = [
 const KEY_USERS = 'csk_users_v5';
 const KEY_STAFF_ATTENDANCE = 'csk_staff_attendance_v5';
 const KEY_STAFF_PERMISSIONS = 'csk_staff_permissions_v5';
+const KEY_LEAVE_REQUESTS = 'csk_leave_requests_v5';
 const KEY_STUDENT_ATTENDANCE = 'csk_student_attendance_v5';
 const KEY_WORK_REPORTS = 'csk_work_reports_v5';
 const KEY_MANAGER_REPORTS = 'csk_manager_reports_v5';
@@ -428,6 +431,7 @@ const INITIAL_STAFF_PERMISSIONS: StaffPermission[] = [
     id: 'perm-1',
     staffId: 'usr-stf-1',
     staffName: 'Kavitha R',
+    userRole: 'staff',
     branchId: 'dadagapatty',
     date: '2026-11-04',
     permissionType: 'morning_late',
@@ -443,6 +447,7 @@ const INITIAL_STAFF_PERMISSIONS: StaffPermission[] = [
     id: 'perm-2',
     staffId: 'usr-stf-1',
     staffName: 'Kavitha R',
+    userRole: 'staff',
     branchId: 'dadagapatty',
     date: '2026-11-09',
     permissionType: 'evening_early',
@@ -452,6 +457,72 @@ const INITIAL_STAFF_PERMISSIONS: StaffPermission[] = [
     reason: 'Personal family emergency',
     status: 'approved',
     approvedBy: 'Branch Manager (Suresh K)',
+    timestamp: 1794206400000
+  },
+  {
+    id: 'perm-3',
+    staffId: 'usr-mgr-1',
+    staffName: 'Suresh K',
+    userRole: 'manager',
+    branchId: 'dadagapatty',
+    date: '2026-11-06',
+    permissionType: 'mid_day',
+    startTime: '01:00 PM',
+    endTime: '03:00 PM',
+    durationHours: 2.0,
+    reason: 'Meeting with Salem District Education Officials for Campus Approval',
+    status: 'approved',
+    approvedBy: 'Center Admin (Anand)',
+    timestamp: 1793947200000
+  }
+];
+
+const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
+  {
+    id: 'leave-1',
+    userId: 'usr-stf-1',
+    userName: 'Kavitha R',
+    userRole: 'staff',
+    branchId: 'dadagapatty',
+    leaveType: 'sick',
+    startDate: '2026-10-18',
+    endDate: '2026-10-18',
+    totalDays: 1,
+    reason: 'Viral fever and doctor consultation',
+    status: 'approved',
+    approvedBy: 'Branch Manager (Suresh K)',
+    appliedOn: '2026-10-17',
+    timestamp: 1792305600000
+  },
+  {
+    id: 'leave-2',
+    userId: 'usr-mgr-1',
+    userName: 'Suresh K',
+    userRole: 'manager',
+    branchId: 'dadagapatty',
+    leaveType: 'planned',
+    startDate: '2026-10-25',
+    endDate: '2026-10-25',
+    totalDays: 1,
+    reason: 'Family wedding function in Erode',
+    status: 'approved',
+    approvedBy: 'Center Admin (Anand)',
+    appliedOn: '2026-10-20',
+    timestamp: 1792910400000
+  },
+  {
+    id: 'leave-3',
+    userId: 'usr-stf-1',
+    userName: 'Kavitha R',
+    userRole: 'staff',
+    branchId: 'dadagapatty',
+    leaveType: 'casual',
+    startDate: '2026-11-14',
+    endDate: '2026-11-14',
+    totalDays: 1,
+    reason: 'Attending Regional AI & Python Developers Conference',
+    status: 'pending',
+    appliedOn: '2026-11-09',
     timestamp: 1794206400000
   }
 ];
@@ -813,10 +884,11 @@ export const dbService = {
     return existing;
   },
 
-  // STAFF ATTENDANCE STATS & DETAILS
+  // STAFF & MANAGER ATTENDANCE STATS & DETAILS
   getStaffAttendanceStats(staffId: string, month?: string) {
     const list = this.getStaffAttendance(undefined, undefined, month).filter(a => a.staffId === staffId);
     const permissions = this.getStaffPermissions(staffId, month);
+    const leaves = this.getLeaves(staffId, undefined, month);
     
     const totalDaysPresent = list.filter(a => a.status === 'present' || a.status === 'permission' || (a.loginTime && a.status !== 'absent')).length;
     const totalHalfDays = list.filter(a => a.status === 'half_day').length;
@@ -824,6 +896,9 @@ export const dbService = {
     
     const totalPermissionCount = permissions.length;
     const totalPermissionHours = permissions.reduce((acc, p) => acc + (Number(p.durationHours) || 0), 0);
+
+    const totalLeavesCount = leaves.length;
+    const totalLeaveDays = leaves.reduce((acc, l) => acc + (Number(l.totalDays) || 1), 0);
     
     let totalMinutesWorked = 0;
     list.forEach(item => {
@@ -850,14 +925,17 @@ export const dbService = {
       totalAbsents,
       totalPermissionCount,
       totalPermissionHours,
+      totalLeavesCount,
+      totalLeaveDays,
       totalHoursFormatted,
       attendanceList: list,
-      permissionsList: permissions
+      permissionsList: permissions,
+      leavesList: leaves
     };
   },
 
-  // STAFF PERMISSIONS
-  getStaffPermissions(staffId?: string, month?: string, branchId?: BranchId | 'all'): StaffPermission[] {
+  // STAFF & MANAGER PERMISSIONS
+  getStaffPermissions(staffId?: string, month?: string, branchId?: BranchId | 'all', role?: 'staff' | 'manager' | 'all'): StaffPermission[] {
     let list = loadFromStorage<StaffPermission[]>(KEY_STAFF_PERMISSIONS, INITIAL_STAFF_PERMISSIONS);
     if (staffId && staffId !== 'all') {
       list = list.filter(p => p.staffId === staffId);
@@ -872,13 +950,23 @@ export const dbService = {
         return u?.branchId === branchId;
       });
     }
+    if (role && role !== 'all') {
+      list = list.filter(p => {
+        if (p.userRole) return p.userRole === role;
+        const u = this.getUserById(p.staffId);
+        return u?.role === role;
+      });
+    }
     return list;
   },
 
   addStaffPermission(perm: Omit<StaffPermission, 'id' | 'timestamp'>): StaffPermission {
     const list = loadFromStorage<StaffPermission[]>(KEY_STAFF_PERMISSIONS, INITIAL_STAFF_PERMISSIONS);
+    const user = this.getUserById(perm.staffId);
+    const resolvedRole = perm.userRole || user?.role === 'manager' ? 'manager' : 'staff';
     const newRecord: StaffPermission = {
       ...perm,
+      userRole: resolvedRole as 'staff' | 'manager',
       id: 'perm-' + Date.now(),
       timestamp: Date.now()
     };
@@ -908,6 +996,56 @@ export const dbService = {
     if (approvedBy) existing.approvedBy = approvedBy;
     saveToStorage(KEY_STAFF_PERMISSIONS, list);
     syncDocumentToCloud('staff_permissions', existing.id, existing);
+    return existing;
+  },
+
+  // STAFF & MANAGER LEAVES
+  getLeaves(userId?: string, branchId?: BranchId | 'all', month?: string, role?: 'staff' | 'manager' | 'all'): LeaveRequest[] {
+    let list = loadFromStorage<LeaveRequest[]>(KEY_LEAVE_REQUESTS, INITIAL_LEAVE_REQUESTS);
+    if (userId && userId !== 'all') {
+      list = list.filter(l => l.userId === userId);
+    }
+    if (month && month !== 'all') {
+      list = list.filter(l => l.startDate.startsWith(month) || l.endDate.startsWith(month));
+    }
+    if (branchId && branchId !== 'all') {
+      list = list.filter(l => {
+        if (l.branchId) return l.branchId === branchId;
+        const u = this.getUserById(l.userId);
+        return u?.branchId === branchId;
+      });
+    }
+    if (role && role !== 'all') {
+      list = list.filter(l => l.userRole === role);
+    }
+    return list;
+  },
+
+  addLeave(leave: Omit<LeaveRequest, 'id' | 'timestamp' | 'appliedOn'>): LeaveRequest {
+    const list = loadFromStorage<LeaveRequest[]>(KEY_LEAVE_REQUESTS, INITIAL_LEAVE_REQUESTS);
+    const user = this.getUserById(leave.userId);
+    const resolvedRole = leave.userRole || (user?.role === 'manager' ? 'manager' : 'staff');
+    const newRecord: LeaveRequest = {
+      ...leave,
+      userRole: resolvedRole as 'staff' | 'manager',
+      id: 'leave-' + Date.now(),
+      appliedOn: getTodayDate(),
+      timestamp: Date.now()
+    };
+    list.unshift(newRecord);
+    saveToStorage(KEY_LEAVE_REQUESTS, list);
+    syncDocumentToCloud('leave_requests', newRecord.id, newRecord);
+    return newRecord;
+  },
+
+  updateLeaveStatus(id: string, status: 'approved' | 'rejected', approvedBy?: string): LeaveRequest | null {
+    const list = loadFromStorage<LeaveRequest[]>(KEY_LEAVE_REQUESTS, INITIAL_LEAVE_REQUESTS);
+    const existing = list.find(l => l.id === id);
+    if (!existing) return null;
+    existing.status = status;
+    if (approvedBy) existing.approvedBy = approvedBy;
+    saveToStorage(KEY_LEAVE_REQUESTS, list);
+    syncDocumentToCloud('leave_requests', existing.id, existing);
     return existing;
   },
 
@@ -1166,6 +1304,10 @@ export const dbService = {
       if (cloudStaffPerms && cloudStaffPerms.length > 0) {
         saveToStorage(KEY_STAFF_PERMISSIONS, cloudStaffPerms);
       }
+      const cloudLeaves = await fetchCollectionFromCloud('leave_requests');
+      if (cloudLeaves && cloudLeaves.length > 0) {
+        saveToStorage(KEY_LEAVE_REQUESTS, cloudLeaves);
+      }
       const cloudStudentAtt = await fetchCollectionFromCloud('student_attendance');
       if (cloudStudentAtt && cloudStudentAtt.length > 0) {
         saveToStorage(KEY_STUDENT_ATTENDANCE, cloudStudentAtt);
@@ -1213,6 +1355,13 @@ export const dbService = {
     const unsubStaffPerms = subscribeToCloudCollection('staff_permissions', (cloudStaffPerms) => {
       if (cloudStaffPerms && cloudStaffPerms.length > 0) {
         localStorage.setItem(KEY_STAFF_PERMISSIONS, JSON.stringify(cloudStaffPerms));
+        window.dispatchEvent(new Event('educenter-db-change'));
+      }
+    });
+
+    const unsubLeaves = subscribeToCloudCollection('leave_requests', (cloudLeaves) => {
+      if (cloudLeaves && cloudLeaves.length > 0) {
+        localStorage.setItem(KEY_LEAVE_REQUESTS, JSON.stringify(cloudLeaves));
         window.dispatchEvent(new Event('educenter-db-change'));
       }
     });

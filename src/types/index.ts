@@ -90,6 +90,7 @@ export interface StaffPermission {
   id: string;
   staffId: string;
   staffName: string;
+  userRole?: 'staff' | 'manager';
   branchId?: BranchId;
   date: string; // YYYY-MM-DD
   permissionType: StaffPermissionType;
@@ -99,6 +100,26 @@ export interface StaffPermission {
   reason: string;
   status: 'approved' | 'pending' | 'rejected';
   approvedBy?: string;
+  timestamp: number;
+}
+
+export type LeaveType = 'casual' | 'sick' | 'emergency' | 'planned' | 'half_day';
+
+export interface LeaveRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userRole: 'staff' | 'manager';
+  branchId?: BranchId;
+  leaveType: LeaveType;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  totalDays: number; // e.g. 1, 2, 0.5
+  isHalfDay?: boolean;
+  reason: string;
+  status: 'approved' | 'pending' | 'rejected';
+  approvedBy?: string;
+  appliedOn: string;
   timestamp: number;
 }
 

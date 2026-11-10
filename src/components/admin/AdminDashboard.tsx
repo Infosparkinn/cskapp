@@ -28,13 +28,15 @@ import {
   Plus,
   Trash2,
   Edit3,
-  Filter
+  Filter,
+  Ticket
 } from 'lucide-react';
 import { StatCard } from '../common/StatCard';
 import { StaffManager } from './StaffManager';
 import { StudentManager } from './StudentManager';
 import { ReportsViewer } from './ReportsViewer';
 import { ManagerManager } from './ManagerManager';
+import { LeavesPermissionsManager } from '../common/LeavesPermissionsManager';
 import { dbService, getTodayDate, BRANCHES, downloadCSV } from '../../services/db';
 import { useAuth } from '../../context/AuthContext';
 import type { CenterStats, BranchId, Course, CourseType } from '../../types';
@@ -46,7 +48,7 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal }) => {
   const { currentBranch, setCurrentBranch } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'staff' | 'students' | 'courses' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'staff' | 'students' | 'courses' | 'leaves_permissions' | 'reports'>('overview');
   const [overviewDirectoryTab, setOverviewDirectoryTab] = useState<'staff' | 'students'>('staff');
   const [directorySearch, setDirectorySearch] = useState('');
   const [stats, setStats] = useState<CenterStats>(dbService.getStats(currentBranch, selectedMonth !== 'all' ? selectedMonth : undefined));
@@ -447,6 +449,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" /> Courses & Internships
+          </button>
+          <button
+            onClick={() => setActiveTab('leaves_permissions')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'leaves_permissions' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' 
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Ticket className="w-3.5 h-3.5" /> Leaves & Permissions
           </button>
           <button
             onClick={() => setActiveTab('reports')}
@@ -980,6 +992,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
 
       {/* STUDENT MANAGEMENT TAB */}
       {activeTab === 'students' && <StudentManager initialBranch={currentBranch} />}
+
+      {/* LEAVES & PERMISSIONS MANAGEMENT TAB */}
+      {activeTab === 'leaves_permissions' && (
+        <LeavesPermissionsManager viewerRole="admin" />
+      )}
 
       {/* REPORTS VIEWER TAB */}
       {activeTab === 'reports' && (

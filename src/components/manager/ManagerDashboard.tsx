@@ -29,14 +29,16 @@ import {
   CheckCircle,
   Banknote,
   QrCode,
-  Smartphone
+  Smartphone,
+  Ticket
 } from 'lucide-react';
+import { LeavesPermissionsManager } from '../common/LeavesPermissionsManager';
 import { dbService, getTodayDate, BRANCHES, downloadCSV } from '../../services/db';
 import type { BranchId, UserProfile, ManagerDailyReport, Course, CourseType, PaymentMode, FeePaymentRecord } from '../../types';
 
 export const ManagerDashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'daily_report' | 'staff_management' | 'courses' | 'students'>('daily_report');
+  const [activeTab, setActiveTab] = useState<'daily_report' | 'staff_management' | 'courses' | 'students' | 'leave_permission'>('daily_report');
 
   const defaultBranch: BranchId = currentUser?.branchId || 'dadagapatty';
   const branchObj = BRANCHES.find(b => b.id === defaultBranch);
@@ -578,6 +580,17 @@ export const ManagerDashboard: React.FC = () => {
           >
             <GraduationCap className="w-3.5 h-3.5" />
             Branch Students & Fees ({branchStudents.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('leave_permission')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'leave_permission'
+                ? 'bg-white text-amber-900 shadow-md'
+                : 'text-amber-100 hover:text-white'
+            }`}
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            Leaves & Permissions
           </button>
         </div>
       </div>
@@ -2331,6 +2344,16 @@ export const ManagerDashboard: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* TAB 5: LEAVES & PERMISSIONS MANAGEMENT */}
+      {activeTab === 'leave_permission' && (
+        <LeavesPermissionsManager
+          viewerRole="manager"
+          managerBranchId={defaultBranch}
+          currentUserId={currentUser?.id}
+          currentUserName={currentUser?.name}
+        />
       )}
 
       {/* EDIT STUDENT & BATCH TIMING MODAL */}

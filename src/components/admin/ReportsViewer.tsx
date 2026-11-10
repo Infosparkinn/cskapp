@@ -13,10 +13,12 @@ import {
   Search,
   Building2,
   UserCheck,
-  IdCard
+  IdCard,
+  Ticket
 } from 'lucide-react';
 import { dbService, getTodayDate, BRANCHES, downloadCSV } from '../../services/db';
 import type { DailyWorkReport, StudentAttendance, ManagerDailyReport, BranchId, StaffAttendance } from '../../types';
+import { LeavesPermissionsManager } from '../common/LeavesPermissionsManager';
 
 export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initialMonth?: string }> = ({ 
   initialBranch = 'all',
@@ -26,7 +28,7 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
   const [selectedMonth, setSelectedMonth] = useState<string>(initialMonth);
   const [selectedBranch, setSelectedBranch] = useState<BranchId | 'all'>(initialBranch);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
-  const [reportSection, setReportSection] = useState<'work_reports' | 'manager_reports' | 'staff_attendance' | 'student_attendance'>('work_reports');
+  const [reportSection, setReportSection] = useState<'work_reports' | 'manager_reports' | 'staff_attendance' | 'student_attendance' | 'leaves_permissions'>('work_reports');
   const [dbVersion, setDbVersion] = useState(0);
 
   // Sync branch and month when parent changes
@@ -267,6 +269,16 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
             >
               Student Attendance Logs ({studentAttendance.length})
             </button>
+            <button
+              onClick={() => setReportSection('leaves_permissions')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                reportSection === 'leaves_permissions' 
+                  ? 'bg-white text-purple-700 shadow-xs font-bold' 
+                  : 'text-slate-600'
+              }`}
+            >
+              Leaves & Permissions
+            </button>
           </div>
 
           {/* Branch Filter */}
@@ -337,29 +349,31 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
         </div>
 
         {/* Export CSV button */}
-        <button
-          onClick={
-            reportSection === 'work_reports' 
-              ? exportWorkReportsCSV 
-              : reportSection === 'manager_reports' 
-                ? exportManagerReportsCSV 
-                : reportSection === 'staff_attendance'
-                  ? exportStaffAttendanceCSV
-                  : exportStudentAttendanceCSV
-          }
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all shrink-0 self-end lg:self-auto cursor-pointer"
-        >
-          <Download className="w-4 h-4" />
-          <span>
-            {reportSection === 'work_reports'
-              ? 'Export Staff Reports CSV'
-              : reportSection === 'manager_reports'
-                ? 'Export Manager Reports CSV'
-                : reportSection === 'staff_attendance'
-                  ? 'Export Staff & Manager Attendance CSV'
-                  : 'Export Student Attendance CSV'}
-          </span>
-        </button>
+        {reportSection !== 'leaves_permissions' && (
+          <button
+            onClick={
+              reportSection === 'work_reports' 
+                ? exportWorkReportsCSV 
+                : reportSection === 'manager_reports' 
+                  ? exportManagerReportsCSV 
+                  : reportSection === 'staff_attendance'
+                    ? exportStaffAttendanceCSV
+                    : exportStudentAttendanceCSV
+            }
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all shrink-0 self-end lg:self-auto cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>
+              {reportSection === 'work_reports'
+                ? 'Export Staff Reports CSV'
+                : reportSection === 'manager_reports'
+                  ? 'Export Manager Reports CSV'
+                  : reportSection === 'staff_attendance'
+                    ? 'Export Staff & Manager Attendance CSV'
+                    : 'Export Student Attendance CSV'}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Aggregate KPI ribbon for the selected filter */}
@@ -404,6 +418,9 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
       )}
 
       {/* Main List Table */}
+      {reportSection === 'leaves_permissions' ? (
+        <LeavesPermissionsManager viewerRole="admin" />
+      ) : (
       <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-4">
         {reportSection === 'work_reports' ? (
           <div>
@@ -731,6 +748,7 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
