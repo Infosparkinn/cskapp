@@ -2,14 +2,16 @@
   "name": "CSK Academy & InfoSpark",
   "short_name": "CSK Academy",
   "description": "Educational Institution & Admissions ERP",
-  "start_url": "/",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#091428",
   "theme_color": "#091428",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "./logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
