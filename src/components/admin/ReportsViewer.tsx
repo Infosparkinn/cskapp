@@ -71,6 +71,18 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
     selectedBranch,
     selectedMonth !== 'all' ? selectedMonth : undefined
   );
+  const allLeaves = dbService.getLeaves(
+    undefined,
+    selectedBranch as BranchId | 'all',
+    selectedMonth !== 'all' ? selectedMonth : undefined,
+    'all'
+  );
+  const allPermissions = dbService.getStaffPermissions(
+    undefined,
+    selectedMonth !== 'all' ? selectedMonth : undefined,
+    selectedBranch as BranchId | 'all',
+    'all'
+  );
 
   // Totals for selected date & branch
   let totalCalls = 0;
@@ -165,14 +177,46 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
       'Shift Logout Time',
       'Total Hours / Shift Log',
       'Attendance Status',
-      'Permission Details'
+      'Permission Details',
+      'Leave Details',
+      'Leave Category',
+      'Leave Status',
+      'Leave Days'
     ];
-    const rows = staffAttendance.map(a => {
+
+    // 1. Map existing attendance punches with attached leave/permission details
+    const punchedRows = staffAttendance.map(a => {
       const u = dbService.getUserById(a.staffId);
       const b = BRANCHES.find(br => br.id === (a.branchId || u?.branchId));
       const isManager = u?.role === 'manager' || a.staffName.toLowerCase().includes('manager');
       const roleText = isManager ? 'Branch Manager' : (u?.designation || 'Staff / Faculty');
-      const permText = a.hasPermission || a.permissionReason ? `Permission: ${a.permissionReason} (${a.permissionHours || 1.5} hrs)` : 'None';
+
+      // Check for matching permission
+      const perm = allPermissions.find(p => 
+        (p.staffId === a.staffId || p.staffName.toLowerCase() === a.staffName.toLowerCase()) && 
+        p.date === a.date
+      );
+      const permText = perm 
+        ? `${perm.permissionType.replace('_', ' ')} (${perm.durationHours} hrs: ${perm.startTime} - ${perm.endTime}) - ${perm.reason} [${perm.status}]`
+        : (a.hasPermission || a.permissionReason ? `Permission: ${a.permissionReason} (${a.permissionHours || 1.5} hrs)` : 'None');
+
+      // Check for matching leave
+      const leave = allLeaves.find(l => 
+        (l.userId === a.staffId || l.userName.toLowerCase() === a.staffName.toLowerCase()) && 
+        (a.date >= l.startDate && a.date <= l.endDate)
+      );
+
+      const leaveDetails = leave 
+        ? `${leave.leaveType.toUpperCase()} Leave (${leave.totalDays} day${leave.totalDays > 1 ? 's' : ''}${leave.isHalfDay ? ' - Half Day' : ''}): ${leave.reason}`
+        : 'None';
+      const leaveType = leave ? `${leave.leaveType.toUpperCase()} LEAVE` : 'None';
+      const leaveStatus = leave ? leave.status.toUpperCase() : 'N/A';
+      const leaveDays = leave ? leave.totalDays : 0;
+
+      let attStatus = a.status === 'present' ? 'Present' : (a.status || 'Present');
+      if (leave) {
+        attStatus = leave.isHalfDay ? 'Half-Day Leave' : 'Present (Leave on Record)';
+      }
 
       return [
         a.id,
@@ -185,10 +229,55 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
         a.loginTime || '--:--',
         a.logoutTime || '--:--',
         a.totalHours || (a.status === 'present' ? 'Shift Active / Present' : 'Absent'),
-        a.status === 'present' ? 'Present' : (a.status || 'Present'),
-        permText
+        attStatus,
+        permText,
+        leaveDetails,
+        leaveType,
+        leaveStatus,
+        leaveDays
       ];
     });
+
+    // 2. Include any approved/pending leaves that did not have a punch record on that date
+    const leaveRows: (string | number)[][] = [];
+    allLeaves.forEach(l => {
+      // If a specific date is selected, ensure the leave covers this date
+      if (selectedDate && (selectedDate < l.startDate || selectedDate > l.endDate)) {
+        return;
+      }
+      const leaveDate = selectedDate || l.startDate;
+      // Check if already accounted for in punchedRows on this date
+      const alreadyPunched = staffAttendance.some(a => 
+        (a.staffId === l.userId || a.staffName.toLowerCase() === l.userName.toLowerCase()) && 
+        a.date === leaveDate
+      );
+      if (!alreadyPunched) {
+        const u = dbService.getUserById(l.userId);
+        const b = BRANCHES.find(br => br.id === (l.branchId || u?.branchId));
+        const roleText = l.userRole === 'manager' ? 'Branch Manager' : (u?.designation || 'Staff / Faculty');
+
+        leaveRows.push([
+          `LEAVE-${l.id}`,
+          leaveDate,
+          b?.fullName || 'CSK Academy',
+          l.userName,
+          roleText,
+          u?.staffId || u?.managerId || l.userId,
+          u?.phone || 'N/A',
+          '--:--',
+          '--:--',
+          '0.0 hrs (On Leave)',
+          l.isHalfDay ? 'Half-Day Leave' : 'On Leave',
+          'None',
+          `${l.leaveType.toUpperCase()} Leave (${l.totalDays} day${l.totalDays > 1 ? 's' : ''}${l.isHalfDay ? ' - Half Day' : ''}): ${l.reason}`,
+          `${l.leaveType.toUpperCase()} LEAVE`,
+          l.status.toUpperCase(),
+          l.totalDays
+        ]);
+      }
+    });
+
+    const rows = [...punchedRows, ...leaveRows];
 
     downloadCSV(
       `csk-staff-and-manager-attendance-${selectedBranch}-${selectedMonth || selectedDate || 'all'}.csv`,
@@ -637,6 +726,10 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
                   const u = dbService.getUserById(att.staffId);
                   const sBranch = BRANCHES.find(b => b.id === (att.branchId || u?.branchId));
                   const isManager = u?.role === 'manager' || att.staffName.toLowerCase().includes('manager');
+                  const matchingLeave = allLeaves.find(l => 
+                    (l.userId === att.staffId || l.userName.toLowerCase() === att.staffName.toLowerCase()) && 
+                    (att.date >= l.startDate && att.date <= l.endDate)
+                  );
 
                   return (
                     <div key={att.id} className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
@@ -665,6 +758,12 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
                         {(att.hasPermission || att.permissionReason) && (
                           <div className="mt-1 p-2 bg-purple-50 border border-purple-200/80 rounded-xl text-[11px] text-purple-900">
                             <strong>🎫 Permission Taken:</strong> {att.permissionReason} ({att.permissionHours || 1.5} hrs)
+                          </div>
+                        )}
+
+                        {matchingLeave && (
+                          <div className="mt-1 p-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-900">
+                            <strong>🏖️ Leave on Record:</strong> {matchingLeave.leaveType.toUpperCase()} ({matchingLeave.totalDays} day{matchingLeave.totalDays > 1 ? 's' : ''}{matchingLeave.isHalfDay ? ' - Half Day' : ''}) • Status: <span className="font-bold uppercase">{matchingLeave.status}</span> • Reason: {matchingLeave.reason}
                           </div>
                         )}
                       </div>

@@ -230,15 +230,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
 
   const handleExportStaffAttendance = () => {
     const list = dbService.getStaffAttendance(undefined, currentBranch, selectedMonth !== 'all' ? selectedMonth : undefined);
+    const branchFilter = currentBranch as BranchId | 'all';
+    const leavesList = dbService.getLeaves(undefined, branchFilter, selectedMonth !== 'all' ? selectedMonth : undefined, 'all');
+    const permissionsList = dbService.getStaffPermissions(undefined, selectedMonth !== 'all' ? selectedMonth : undefined, branchFilter, 'all');
+
     const headers = [
       'Attendance ID', 'Date', 'Branch / Campus', 'Full Name', 'Role',
       'Staff / Manager ID', 'Phone Number', 'Shift Login Time', 'Shift Logout Time',
-      'Total Hours / Shift Log', 'Attendance Status'
+      'Total Hours / Shift Log', 'Attendance Status', 'Permission Details',
+      'Leave Details', 'Leave Category', 'Leave Status', 'Leave Days'
     ];
-    const rows = list.map(a => {
+
+    const punchedRows = list.map(a => {
       const u = dbService.getUserById(a.staffId);
       const b = BRANCHES.find(br => br.id === (a.branchId || u?.branchId));
       const isManager = u?.role === 'manager' || a.staffName.toLowerCase().includes('manager');
+
+      const perm = permissionsList.find(p => 
+        (p.staffId === a.staffId || p.staffName.toLowerCase() === a.staffName.toLowerCase()) && 
+        p.date === a.date
+      );
+      const permText = perm 
+        ? `${perm.permissionType.replace('_', ' ')} (${perm.durationHours} hrs: ${perm.startTime} - ${perm.endTime}) - ${perm.reason} [${perm.status}]`
+        : (a.hasPermission || a.permissionReason ? `Permission: ${a.permissionReason} (${a.permissionHours || 1.5} hrs)` : 'None');
+
+      const leave = leavesList.find(l => 
+        (l.userId === a.staffId || l.userName.toLowerCase() === a.staffName.toLowerCase()) && 
+        (a.date >= l.startDate && a.date <= l.endDate)
+      );
+
+      const leaveDetails = leave 
+        ? `${leave.leaveType.toUpperCase()} Leave (${leave.totalDays} day${leave.totalDays > 1 ? 's' : ''}${leave.isHalfDay ? ' - Half Day' : ''}): ${leave.reason}`
+        : 'None';
+      const leaveType = leave ? `${leave.leaveType.toUpperCase()} LEAVE` : 'None';
+      const leaveStatus = leave ? leave.status.toUpperCase() : 'N/A';
+      const leaveDays = leave ? leave.totalDays : 0;
+
+      let attStatus = a.status === 'present' ? 'Present' : (a.status || 'Present');
+      if (leave) {
+        attStatus = leave.isHalfDay ? 'Half-Day Leave' : 'Present (Leave on Record)';
+      }
+
       return [
         a.id,
         a.date,
@@ -250,9 +282,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
         a.loginTime || '--:--',
         a.logoutTime || '--:--',
         a.totalHours || (a.status === 'present' ? 'Shift Active / Present' : 'Absent'),
-        a.status === 'present' ? 'Present' : (a.status || 'Present')
+        attStatus,
+        permText,
+        leaveDetails,
+        leaveType,
+        leaveStatus,
+        leaveDays
       ];
     });
+
+    // Also include any approved/pending leaves that did not have a punch record on that date
+    const leaveRows: (string | number)[][] = [];
+    leavesList.forEach(l => {
+      const leaveDate = l.startDate;
+      const alreadyPunched = list.some(a => 
+        (a.staffId === l.userId || a.staffName.toLowerCase() === l.userName.toLowerCase()) && 
+        a.date === leaveDate
+      );
+      if (!alreadyPunched) {
+        const u = dbService.getUserById(l.userId);
+        const b = BRANCHES.find(br => br.id === (l.branchId || u?.branchId));
+        const roleText = l.userRole === 'manager' ? 'Branch Manager' : (u?.designation || 'Staff / Faculty');
+
+        leaveRows.push([
+          `LEAVE-${l.id}`,
+          leaveDate,
+          b?.fullName || 'CSK Academy',
+          l.userName,
+          roleText,
+          u?.staffId || u?.managerId || l.userId,
+          u?.phone || 'N/A',
+          '--:--',
+          '--:--',
+          '0.0 hrs (On Leave)',
+          l.isHalfDay ? 'Half-Day Leave' : 'On Leave',
+          'None',
+          `${l.leaveType.toUpperCase()} Leave (${l.totalDays} day${l.totalDays > 1 ? 's' : ''}${l.isHalfDay ? ' - Half Day' : ''}): ${l.reason}`,
+          `${l.leaveType.toUpperCase()} LEAVE`,
+          l.status.toUpperCase(),
+          l.totalDays
+        ]);
+      }
+    });
+
+    const rows = [...punchedRows, ...leaveRows];
     downloadCSV(`csk-staff-and-manager-attendance-${currentBranch}-${selectedMonth || 'all'}.csv`, headers, rows);
   };
 
