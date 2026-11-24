@@ -1,0 +1,17 @@
+Role (admin / manager / staff / student),Roll_or_Employee_ID,Full_Name,Login_Username,Password,Phone,Email,Branch_ID,Job_Role_or_Course_Name,Designation_or_Standard,Total_Fees,Paid_Fees,Fee_Status,Remarks
+admin,usr-admin-1,Kalai SK,admin,admin123,9845012345,admin@cskacademy.com,new_bus_stand,Administration,Managing Director & Head of Centers,,,,Head Office System Admin
+admin,usr-admin-2,Anand,anand_admin,admin456,9845012349,anand@cskacademy.com,dadagapatty,Administration,Center Director & Academic Head,,,,Academic Operations
+manager,MGR-001,Ramesh Kumar,manager,manager123,9845012346,manager.salem@cskacademy.com,dadagapatty,Branch Management,Dadagapatty Branch Manager,,,,active
+manager,MGR-002,Suresh Balan,manager_kondalampatty,manager123,9845012351,suresh.knd@cskacademy.com,kondalampatty,Branch Management,Salem Junction Branch Manager,,,,active
+manager,MGR-003,Venkatesh S,manager_ammapet,manager123,9845012352,venkat.amp@cskacademy.com,ammapet,Branch Management,Ammapet Campus Manager,,,,active
+manager,MGR-004,Manikandan R,manager_newbusstand,manager123,9845012353,mani.nbs@infospark.com,new_bus_stand,Branch Management,Tech Operations Manager,,,,active
+staff,STF-001,Priya Dharshini,priya_salem,staff123,9845012347,priya.faculty@cskacademy.com,dadagapatty,both,Senior AI & Python Faculty,,,,active
+staff,STF-002,Logesh Kannan,logesh_salem,staff123,9845012348,logesh.faculty@cskacademy.com,dadagapatty,teaching,Full Stack Web & C/C++ Mentor,,,,active
+staff,STF-003,Kavitha Rajan,kavitha_telecall,staff123,9845012361,kavitha.call@cskacademy.com,kondalampatty,telecalling,Lead Academic Counselor & Telecaller,,,,active
+staff,STF-004,Deepak Sundaram,deepak_amp,staff123,9845012362,deepak.mentor@cskacademy.com,ammapet,teaching,Data Science & Cloud Trainer,,,,active
+staff,STF-005,Anitha Mohan,anitha_nbs,staff123,9845012363,anitha.mentor@infospark.com,new_bus_stand,both,Software Developer & Project Lead,,,,active
+student,STU-001,Dinesh Kumar,dinesh2026,student123,9845012371,dinesh.stu@gmail.com,dadagapatty,Artificial Intelligence & Deep Learning (AI),B.Tech Computer Science 3rd Year,30000,15000,partial,10:00 AM - 12:00 PM
+student,STU-002,Sneha Prakash,sneha2026,student123,9845012372,sneha.stu@gmail.com,dadagapatty,Full Stack Web Development (MERN / Python),B.E. ECE Graduate (2025),25000,25000,paid,02:00 PM - 04:00 PM
+student,STU-003,Vigneshwaran P,vicky2026,student123,9845012373,vicky.stu@gmail.com,kondalampatty,C / C++ Programming & Data Structures,BCA 2nd Year,15000,7500,partial,05:30 PM - 07:00 PM
+student,STU-004,Pavithra M,pavi2026,student123,9845012374,pavi.stu@gmail.com,ammapet,Data Science & Machine Learning with Python,B.Sc Maths / Junior Analyst,35000,35000,paid,07:00 PM - 08:30 PM
+student,STU-005,Mohammed Farhan,farhan2026,student123,9845012375,farhan.stu@gmail.com,new_bus_stand,Full Stack Web Development Internship (30 Days),B.Tech IT Final Year,6500,6500,paid,11:00 AM - 01:00 PM

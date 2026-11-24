@@ -1,0 +1,3 @@
+User ID (e.g. usr-admin-1),Full Name *,Login Username *,Password *,Mobile Phone *,Email Address,Designation / Title,Assigned Branch ID *,Branch Full Name,Remarks / Notes
+usr-admin-1,Kalai SK,admin,admin123,9845012345,admin@cskacademy.com,Managing Director & Head of Centers,new_bus_stand,CSK Academy & InfoSpark Innovation Pvt Ltd,Head Office System Admin
+usr-admin-2,Anand,anand_admin,admin456,9845012349,anand@cskacademy.com,Center Director & Academic Head,dadagapatty,"CSK Academy - Dadagapatty, Salem",Academic Operations

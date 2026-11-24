@@ -1,0 +1,5 @@
+User ID (e.g. usr-mgr-1),Manager Code (e.g. MGR-001) *,Full Name *,Login Username *,Password *,Mobile Phone *,Email Address,Assigned Branch ID *,Branch Full Name,Designation,Joining Date (YYYY-MM-DD),Status (active / inactive)
+usr-mgr-1,MGR-001,Ramesh Kumar,manager,manager123,9845012346,manager.salem@cskacademy.com,dadagapatty,"CSK Academy - Dadagapatty, Salem",Dadagapatty Branch Manager,2026-01-05,active
+usr-mgr-2,MGR-002,Suresh Balan,manager_kondalampatty,manager123,9845012351,suresh.knd@cskacademy.com,kondalampatty,"CSK Academy - Kondalampatty, Salem",Salem Junction Branch Manager,2026-01-10,active
+usr-mgr-3,MGR-003,Venkatesh S,manager_ammapet,manager123,9845012352,venkat.amp@cskacademy.com,ammapet,"CSK Academy - Ammapet, Salem",Ammapet Campus Manager,2026-01-15,active
+usr-mgr-4,MGR-004,Manikandan R,manager_newbusstand,manager123,9845012353,mani.nbs@infospark.com,new_bus_stand,InfoSpark Innovation Pvt Ltd - New Bus Stand,Tech Operations Manager,2026-01-20,active
