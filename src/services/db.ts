@@ -2250,6 +2250,48 @@ export const dbService = {
     return newSlip;
   },
 
+  saveSalarySlip(slipData: Omit<SalarySlip, 'id' | 'timestamp'> & { id?: string }): SalarySlip {
+    const list = loadFromStorage<SalarySlip[]>(KEY_SALARY_SLIPS, INITIAL_SALARY_SLIPS);
+    const slipId = slipData.id || `sal-${Date.now()}`;
+    const existingIdx = list.findIndex(s => s.id === slipId || (s.staffId === slipData.staffId && s.month === slipData.month));
+
+    const finalSlip: SalarySlip = {
+      ...slipData,
+      id: existingIdx >= 0 ? list[existingIdx].id : slipId,
+      timestamp: existingIdx >= 0 ? list[existingIdx].timestamp : Date.now()
+    };
+
+    if (existingIdx >= 0) {
+      list[existingIdx] = finalSlip;
+    } else {
+      list.unshift(finalSlip);
+    }
+
+    saveToStorage(KEY_SALARY_SLIPS, list);
+    syncDocumentToCloud('salary_slips', finalSlip.id, finalSlip);
+
+    // If paid, also log into Operating Expenses for P&L
+    if (finalSlip.status === 'paid') {
+      const expenses = loadFromStorage<ExpenseRecord[]>(KEY_EXPENSES, INITIAL_EXPENSES);
+      const expExists = expenses.some(e => e.notes?.includes(finalSlip.id));
+      if (!expExists) {
+        this.addExpense({
+          title: `Staff Salary: ${finalSlip.staffName} (${finalSlip.month})`,
+          category: 'payroll',
+          amount: finalSlip.netPayable,
+          date: finalSlip.disbursedDate || getTodayDate(),
+          branchId: finalSlip.branchId,
+          paymentMode: (finalSlip.paymentMode as PaymentMode) || 'bank_transfer',
+          paidTo: finalSlip.staffName,
+          approvedBy: finalSlip.disbursedBy || 'Center Admin',
+          notes: `Ref: ${finalSlip.paymentRef || finalSlip.id} - Disbursed to ${finalSlip.staffName}`
+        });
+      }
+    }
+
+    return finalSlip;
+  },
+
   updateSalarySlipStatus(id: string, status: 'approved' | 'paid', paymentRef?: string, paymentMode?: PaymentMode | 'bank_transfer', disbursedBy?: string): SalarySlip | null {
     const list = loadFromStorage<SalarySlip[]>(KEY_SALARY_SLIPS, INITIAL_SALARY_SLIPS);
     const slip = list.find(s => s.id === id);
@@ -2258,7 +2300,25 @@ export const dbService = {
     if (paymentRef) slip.paymentRef = paymentRef;
     if (paymentMode) slip.paymentMode = paymentMode;
     if (disbursedBy) slip.disbursedBy = disbursedBy;
-    if (status === 'paid') slip.disbursedDate = getTodayDate();
+    if (status === 'paid') {
+      slip.disbursedDate = getTodayDate();
+      // Auto-log into Operating Expenses for P&L tracking
+      const expenses = loadFromStorage<ExpenseRecord[]>(KEY_EXPENSES, INITIAL_EXPENSES);
+      const expExists = expenses.some(e => e.notes?.includes(slip.id));
+      if (!expExists) {
+        this.addExpense({
+          title: `Staff Salary: ${slip.staffName} (${slip.month})`,
+          category: 'payroll',
+          amount: slip.netPayable,
+          date: getTodayDate(),
+          branchId: slip.branchId,
+          paymentMode: (paymentMode as PaymentMode) || 'bank_transfer',
+          paidTo: slip.staffName,
+          approvedBy: disbursedBy || 'Center Admin',
+          notes: `Ref: ${paymentRef || slip.id} - Disbursed by ${disbursedBy || 'Admin'}`
+        });
+      }
+    }
 
     saveToStorage(KEY_SALARY_SLIPS, list);
     syncDocumentToCloud('salary_slips', slip.id, slip);

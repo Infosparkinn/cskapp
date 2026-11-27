@@ -13,7 +13,10 @@ import {
   Send,
   Printer,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Edit2,
+  Calculator,
+  Check
 } from 'lucide-react';
 import { dbService, getTodayDate, getCurrentTime } from '../../services/db';
 import type { 
@@ -46,6 +49,27 @@ export const PayrollManager: React.FC<PayrollManagerProps> = ({
   const [disburseMode, setDisburseMode] = useState<PaymentMode | 'bank_transfer'>('bank_transfer');
   const [disburseRef, setDisburseRef] = useState('');
 
+  // Enter / Edit Staff Payroll Form State
+  const [showEditPayrollModal, setShowEditPayrollModal] = useState(false);
+  const [editingSlipId, setEditingSlipId] = useState<string | undefined>(undefined);
+  const [payrollForm, setPayrollForm] = useState({
+    staffId: '',
+    month: selectedMonth,
+    baseSalary: 25000,
+    allowances: 2000,
+    bonus: 0,
+    workingDays: 26,
+    presentDays: 24,
+    paidLeaveDays: 1,
+    unpaidLeaveDays: 1,
+    deductions: 962,
+    otherDeductions: 0,
+    deductionReason: '',
+    status: 'approved' as 'draft' | 'approved' | 'paid',
+    paymentMode: 'bank_transfer' as PaymentMode | 'bank_transfer',
+    paymentRef: ''
+  });
+
   const [notification, setNotification] = useState<string | null>(null);
 
   const branches = dbService.getBranches();
@@ -75,6 +99,113 @@ export const PayrollManager: React.FC<PayrollManagerProps> = ({
     if (s.status === 'paid') totalDisbursed += s.netPayable;
     else totalPending += s.netPayable;
   });
+
+  const openEnterPayrollModal = (staff?: UserProfile, existingSlip?: SalarySlip) => {
+    const targetStaff = staff || (allStaff.length > 0 ? allStaff[0] : null);
+    if (!targetStaff) {
+      showToast('No faculty staff members registered yet.');
+      return;
+    }
+
+    const slip = existingSlip || slips.find(s => s.staffId === targetStaff.id && s.month === selectedMonth);
+
+    if (slip) {
+      setEditingSlipId(slip.id);
+      setPayrollForm({
+        staffId: targetStaff.id,
+        month: slip.month,
+        baseSalary: slip.baseSalary,
+        allowances: slip.allowances || 0,
+        bonus: 0,
+        workingDays: slip.workingDays || 26,
+        presentDays: slip.presentDays || 24,
+        paidLeaveDays: slip.paidLeaveDays || 1,
+        unpaidLeaveDays: slip.unpaidLeaveDays || 0,
+        deductions: slip.deductions || 0,
+        otherDeductions: 0,
+        deductionReason: slip.deductionReason || '',
+        status: slip.status,
+        paymentMode: slip.paymentMode || 'bank_transfer',
+        paymentRef: slip.paymentRef || ''
+      });
+    } else {
+      const basePay = targetStaff.jobRole === 'both' ? 28000 : targetStaff.jobRole === 'teaching' ? 24000 : 20000;
+      const att = dbService.getStaffAttendance(undefined, targetStaff.branchId, selectedMonth).filter(a => a.staffId === targetStaff.id);
+      const presentCount = att.filter(a => a.status === 'present').length;
+      const workingDays = 26;
+      const estimatedPresent = Math.min(workingDays, Math.max(22, presentCount > 0 ? presentCount : 24));
+      const unpaid = Math.max(0, workingDays - estimatedPresent - 1);
+      const dailyRate = Math.round(basePay / workingDays);
+      const leaveDeduction = unpaid * dailyRate;
+
+      setEditingSlipId(undefined);
+      setPayrollForm({
+        staffId: targetStaff.id,
+        month: selectedMonth,
+        baseSalary: basePay,
+        allowances: 2000,
+        bonus: 0,
+        workingDays: workingDays,
+        presentDays: estimatedPresent,
+        paidLeaveDays: 1,
+        unpaidLeaveDays: unpaid,
+        deductions: leaveDeduction,
+        otherDeductions: 0,
+        deductionReason: unpaid > 0 ? `${unpaid} unpaid leave day(s)` : '',
+        status: 'approved',
+        paymentMode: 'bank_transfer',
+        paymentRef: ''
+      });
+    }
+    setShowEditPayrollModal(true);
+  };
+
+  const handleStaffChangeInModal = (newStaffId: string) => {
+    const targetStaff = allStaff.find(s => s.id === newStaffId);
+    if (!targetStaff) return;
+    openEnterPayrollModal(targetStaff);
+  };
+
+  const handleSavePayroll = (e: React.FormEvent) => {
+    e.preventDefault();
+    const staff = allStaff.find(s => s.id === payrollForm.staffId);
+    if (!staff) {
+      showToast('Please select a valid staff member.');
+      return;
+    }
+
+    const totalDeductions = Number(payrollForm.deductions) + Number(payrollForm.otherDeductions);
+    const grossEarnings = Number(payrollForm.baseSalary) + Number(payrollForm.allowances) + Number(payrollForm.bonus);
+    const net = Math.max(0, grossEarnings - totalDeductions);
+
+    const saved = dbService.saveSalarySlip({
+      id: editingSlipId,
+      staffId: staff.id,
+      staffName: staff.name,
+      branchId: staff.branchId || 'dadagapatty',
+      month: payrollForm.month,
+      baseSalary: Number(payrollForm.baseSalary) || 0,
+      allowances: (Number(payrollForm.allowances) || 0) + (Number(payrollForm.bonus) || 0),
+      workingDays: Number(payrollForm.workingDays) || 26,
+      presentDays: Number(payrollForm.presentDays) || 0,
+      paidLeaveDays: Number(payrollForm.paidLeaveDays) || 0,
+      unpaidLeaveDays: Number(payrollForm.unpaidLeaveDays) || 0,
+      deductions: totalDeductions,
+      deductionReason: payrollForm.deductionReason.trim() || (totalDeductions > 0 ? `${payrollForm.unpaidLeaveDays} leave days deducted` : undefined),
+      netPayable: net,
+      status: payrollForm.status,
+      paymentMode: payrollForm.status === 'paid' ? payrollForm.paymentMode : undefined,
+      paymentRef: payrollForm.status === 'paid' ? (payrollForm.paymentRef.trim() || `TXN-${Date.now().toString().slice(-6)}`) : undefined,
+      disbursedDate: payrollForm.status === 'paid' ? getTodayDate() : undefined,
+      disbursedBy: payrollForm.status === 'paid' ? (currentUserName || 'Center Admin') : undefined
+    });
+
+    if (saved) {
+      showToast(`Payroll saved for ${staff.name} (${payrollForm.month})! Net: ₹${net.toLocaleString('en-IN')}`);
+      setShowEditPayrollModal(false);
+      loadData();
+    }
+  };
 
   const handleGenerateSlip = (staffId: string) => {
     const newSlip = dbService.generateSalarySlip(staffId, selectedMonth);
@@ -137,12 +268,20 @@ export const PayrollManager: React.FC<PayrollManagerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleGenerateAllSlips}
-          className="py-3 px-5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-2xl text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 active:scale-95 transition-all cursor-pointer self-start md:self-auto"
-        >
-          <CreditCard className="w-4 h-4" /> Calculate All Monthly Salaries
-        </button>
+        <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
+          <button
+            onClick={() => openEnterPayrollModal()}
+            className="py-3 px-4 sm:px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 active:scale-95 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Enter Staff Payroll
+          </button>
+          <button
+            onClick={handleGenerateAllSlips}
+            className="py-3 px-4 sm:px-5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-2xl text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 active:scale-95 transition-all cursor-pointer"
+          >
+            <CreditCard className="w-4 h-4" /> Auto-Calculate All
+          </button>
+        </div>
       </div>
 
       {/* Overview Stat Cards */}
@@ -328,20 +467,37 @@ export const PayrollManager: React.FC<PayrollManagerProps> = ({
                               </button>
                             )}
                             <button
+                              onClick={() => openEnterPayrollModal(staff, slip)}
+                              title="Edit / Adjust Staff Payroll"
+                              className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => setActiveSlipModal(slip)}
                               title="View & Print Pay Slip"
-                              className="p-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                              className="p-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors cursor-pointer"
                             >
                               <FileText className="w-4 h-4" />
                             </button>
                           </>
                         ) : (
-                          <button
-                            onClick={() => handleGenerateSlip(staff.id)}
-                            className="py-1.5 px-3 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center gap-1 shadow-xs cursor-pointer"
-                          >
-                            Calculate
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openEnterPayrollModal(staff)}
+                              className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Enter Payroll
+                            </button>
+                            <button
+                              onClick={() => handleGenerateSlip(staff.id)}
+                              title="Auto-calculate based on attendance benchmark"
+                              className="p-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 transition-colors cursor-pointer"
+                            >
+                              <Calculator className="w-4 h-4" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </td>
@@ -545,17 +701,319 @@ export const PayrollManager: React.FC<PayrollManagerProps> = ({
             <div className="pt-2 flex items-center justify-between">
               <button
                 onClick={() => window.print()}
-                className="py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5"
+                className="py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Printer className="w-4 h-4" /> Print Pay Slip
               </button>
               <button
                 onClick={() => setActiveSlipModal(null)}
-                className="py-2 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
+                className="py-2 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs cursor-pointer"
               >
                 Done
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: ENTER / EDIT STAFF PAYROLL */}
+      {showEditPayrollModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">Payroll Entry & Salary Setup</span>
+                <h3 className="font-black text-slate-900 text-base">
+                  {editingSlipId ? 'Edit / Adjust Staff Payroll' : 'Enter New Staff Payroll'}
+                </h3>
+                <p className="text-xs text-slate-400">Configure base earnings, allowances, attendance days, and custom deductions.</p>
+              </div>
+              <button 
+                onClick={() => setShowEditPayrollModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePayroll} className="space-y-4 text-xs">
+              {/* Staff Member & Month */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Select Faculty Staff *</label>
+                  <select
+                    value={payrollForm.staffId}
+                    onChange={(e) => handleStaffChangeInModal(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-hidden focus:border-purple-500"
+                  >
+                    <option value="" disabled>-- Select Staff Member --</option>
+                    {allStaff.map(stf => (
+                      <option key={stf.id} value={stf.id}>
+                        {stf.name} ({stf.designation || stf.jobRole || 'Faculty'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Payroll Month *</label>
+                  <input
+                    type="month"
+                    required
+                    value={payrollForm.month}
+                    onChange={(e) => setPayrollForm({ ...payrollForm, month: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-hidden focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Earnings Breakdown */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                <span className="text-[11px] font-extrabold uppercase text-purple-900 block tracking-wide">
+                  1. Monthly Earnings Breakdown
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Base Salary (₹) *</label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      value={payrollForm.baseSalary}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        const unpaidDeduction = payrollForm.workingDays > 0 
+                          ? Math.round(payrollForm.unpaidLeaveDays * (val / payrollForm.workingDays))
+                          : 0;
+                        setPayrollForm({ ...payrollForm, baseSalary: val, deductions: unpaidDeduction });
+                      }}
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">HRA & Allowances (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={payrollForm.allowances}
+                      onChange={(e) => setPayrollForm({ ...payrollForm, allowances: Number(e.target.value) })}
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-emerald-800 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Incentive / Bonus (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={payrollForm.bonus}
+                      onChange={(e) => setPayrollForm({ ...payrollForm, bonus: Number(e.target.value) })}
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-emerald-800 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-500 font-medium flex justify-between items-center pt-1 border-t border-slate-200/60">
+                  <span>Gross Monthly Earnings:</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    ₹{(Number(payrollForm.baseSalary) + Number(payrollForm.allowances) + Number(payrollForm.bonus)).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Attendance & Working Days */}
+              <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 space-y-3">
+                <span className="text-[11px] font-extrabold uppercase text-blue-900 block tracking-wide">
+                  2. Working Days & Attendance
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Total Days</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={payrollForm.workingDays}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        const unpaid = Math.max(0, val - payrollForm.presentDays - payrollForm.paidLeaveDays);
+                        const ded = val > 0 ? Math.round(unpaid * (payrollForm.baseSalary / val)) : 0;
+                        setPayrollForm({ ...payrollForm, workingDays: val, unpaidLeaveDays: unpaid, deductions: ded });
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-center text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Present</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={payrollForm.workingDays}
+                      value={payrollForm.presentDays}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        const unpaid = Math.max(0, payrollForm.workingDays - val - payrollForm.paidLeaveDays);
+                        const ded = payrollForm.workingDays > 0 ? Math.round(unpaid * (payrollForm.baseSalary / payrollForm.workingDays)) : 0;
+                        setPayrollForm({ ...payrollForm, presentDays: val, unpaidLeaveDays: unpaid, deductions: ded });
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-center text-emerald-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Paid Leave</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={payrollForm.paidLeaveDays}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        const unpaid = Math.max(0, payrollForm.workingDays - payrollForm.presentDays - val);
+                        const ded = payrollForm.workingDays > 0 ? Math.round(unpaid * (payrollForm.baseSalary / payrollForm.workingDays)) : 0;
+                        setPayrollForm({ ...payrollForm, paidLeaveDays: val, unpaidLeaveDays: unpaid, deductions: ded });
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-center text-blue-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Unpaid Leave</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={payrollForm.workingDays}
+                      value={payrollForm.unpaidLeaveDays}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        const ded = payrollForm.workingDays > 0 ? Math.round(val * (payrollForm.baseSalary / payrollForm.workingDays)) : 0;
+                        setPayrollForm({ ...payrollForm, unpaidLeaveDays: val, deductions: ded });
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-center text-rose-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Deductions Section */}
+              <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-100 space-y-3">
+                <span className="text-[11px] font-extrabold uppercase text-rose-900 block tracking-wide">
+                  3. Deductions & Adjustments
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Leave Deductions (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={payrollForm.deductions}
+                      onChange={(e) => setPayrollForm({ ...payrollForm, deductions: Number(e.target.value) })}
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-rose-800 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-600 mb-1">Advance / TDS / PF (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={payrollForm.otherDeductions}
+                      onChange={(e) => setPayrollForm({ ...payrollForm, otherDeductions: Number(e.target.value) })}
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-rose-800 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-600 mb-1">Deduction Reason / Notes</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 1 day unpaid leave + Rs. 500 salary advance"
+                    value={payrollForm.deductionReason}
+                    onChange={(e) => setPayrollForm({ ...payrollForm, deductionReason: e.target.value })}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Live Net Salary Summary */}
+              {(() => {
+                const totalDed = Number(payrollForm.deductions) + Number(payrollForm.otherDeductions);
+                const gross = Number(payrollForm.baseSalary) + Number(payrollForm.allowances) + Number(payrollForm.bonus);
+                const net = Math.max(0, gross - totalDed);
+                return (
+                  <div className="p-4 bg-gradient-to-r from-purple-900 to-indigo-900 text-white rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-purple-300 block">Total Net Salary Payable</span>
+                      <p className="text-[11px] text-purple-200 mt-0.5">Gross ₹{gross.toLocaleString('en-IN')} - Deductions ₹{totalDed.toLocaleString('en-IN')}</p>
+                    </div>
+                    <span className="font-mono font-black text-2xl text-amber-300">
+                      ₹{net.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Status & Payment Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Disbursement Status</label>
+                  <select
+                    value={payrollForm.status}
+                    onChange={(e) => setPayrollForm({ ...payrollForm, status: e.target.value as any })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-hidden"
+                  >
+                    <option value="approved">Approved (Pending Transfer)</option>
+                    <option value="paid">Mark as Disbursed (Already Paid)</option>
+                    <option value="draft">Draft (Under Review)</option>
+                  </select>
+                </div>
+
+                {payrollForm.status === 'paid' && (
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Payment Mode & Ref</label>
+                    <div className="flex gap-1.5">
+                      <select
+                        value={payrollForm.paymentMode}
+                        onChange={(e) => setPayrollForm({ ...payrollForm, paymentMode: e.target.value as any })}
+                        className="px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs"
+                      >
+                        <option value="bank_transfer">NEFT/IMPS</option>
+                        <option value="upi">UPI</option>
+                        <option value="cash">Cash</option>
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Txn Ref No..."
+                        value={payrollForm.paymentRef}
+                        onChange={(e) => setPayrollForm({ ...payrollForm, paymentRef: e.target.value })}
+                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Form Buttons */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditPayrollModal(false)}
+                  className="py-2.5 px-4 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="py-2.5 px-6 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black shadow-md shadow-purple-600/20 active:scale-95 cursor-pointer"
+                >
+                  Save & Issue Pay Slip
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
