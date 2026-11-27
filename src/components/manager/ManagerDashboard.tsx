@@ -30,15 +30,34 @@ import {
   Banknote,
   QrCode,
   Smartphone,
-  Ticket
+  Ticket,
+  DollarSign,
+  Layers,
+  Bell
 } from 'lucide-react';
 import { LeavesPermissionsManager } from '../common/LeavesPermissionsManager';
+import { CRMManager } from '../crm/CRMManager';
+import { PendingFeesManager } from '../finance/PendingFeesManager';
+import { ExpenseManager } from '../finance/ExpenseManager';
+import { LMSManager } from '../lms/LMSManager';
+import { NoticeBoardManager } from '../erp/NoticeBoardManager';
 import { dbService, getTodayDate, BRANCHES, downloadCSV } from '../../services/db';
 import type { BranchId, UserProfile, ManagerDailyReport, Course, CourseType, PaymentMode, FeePaymentRecord } from '../../types';
 
 export const ManagerDashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'daily_report' | 'staff_management' | 'courses' | 'students' | 'leave_permission'>('daily_report');
+  const [activeTab, setActiveTab] = useState<
+    | 'daily_report' 
+    | 'crm' 
+    | 'pending_fees' 
+    | 'expenses' 
+    | 'staff_management' 
+    | 'courses' 
+    | 'students' 
+    | 'leave_permission' 
+    | 'lms' 
+    | 'notices'
+  >('daily_report');
 
   const defaultBranch: BranchId = currentUser?.branchId || 'dadagapatty';
   const branchObj = BRANCHES.find(b => b.id === defaultBranch);
@@ -543,7 +562,7 @@ export const ManagerDashboard: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="relative z-10 mt-5 flex items-center gap-1 bg-black/20 p-1.5 rounded-2xl max-w-fit border border-white/15 overflow-x-auto no-scrollbar">
+        <div className="relative z-10 mt-5 flex items-center gap-1 bg-black/20 p-1.5 rounded-2xl max-w-full border border-white/15 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('daily_report')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
@@ -553,7 +572,40 @@ export const ManagerDashboard: React.FC = () => {
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            Manager Daily Report
+            Daily Report
+          </button>
+          <button
+            onClick={() => setActiveTab('crm')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'crm'
+                ? 'bg-white text-amber-900 shadow-md'
+                : 'text-amber-100 hover:text-white'
+            }`}
+          >
+            <Phone className="w-3.5 h-3.5" />
+            CRM & Leads
+          </button>
+          <button
+            onClick={() => setActiveTab('pending_fees')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'pending_fees'
+                ? 'bg-white text-amber-900 shadow-md'
+                : 'text-amber-100 hover:text-white'
+            }`}
+          >
+            <CreditCard className="w-3.5 h-3.5" />
+            Pending Fees
+          </button>
+          <button
+            onClick={() => setActiveTab('expenses')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'expenses'
+                ? 'bg-white text-amber-900 shadow-md'
+                : 'text-amber-100 hover:text-white'
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            Branch Expenses
           </button>
           <button
             onClick={() => setActiveTab('staff_management')}
@@ -564,7 +616,7 @@ export const ManagerDashboard: React.FC = () => {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            Staff Management ({branchStaff.length})
+            Staff ({branchStaff.length})
           </button>
           <button
             onClick={() => setActiveTab('leave_permission')}
@@ -575,7 +627,7 @@ export const ManagerDashboard: React.FC = () => {
             }`}
           >
             <Ticket className="w-3.5 h-3.5" />
-            Leaves & Permissions
+            Leaves & Perms
             {totalBranchPending > 0 && (
               <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
                 {totalBranchPending}
@@ -591,7 +643,7 @@ export const ManagerDashboard: React.FC = () => {
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            Branch Courses ({branchCourses.length})
+            Courses ({branchCourses.length})
           </button>
           <button
             onClick={() => setActiveTab('students')}
@@ -602,7 +654,29 @@ export const ManagerDashboard: React.FC = () => {
             }`}
           >
             <GraduationCap className="w-3.5 h-3.5" />
-            Branch Students & Fees ({branchStudents.length})
+            Students ({branchStudents.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('lms')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'lms'
+                ? 'bg-white text-amber-900 shadow-md'
+                : 'text-amber-100 hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            LMS Syllabus
+          </button>
+          <button
+            onClick={() => setActiveTab('notices')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'notices'
+                ? 'bg-white text-amber-900 shadow-md'
+                : 'text-amber-100 hover:text-white'
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5" />
+            Circulars
           </button>
         </div>
       </div>
@@ -2415,6 +2489,48 @@ export const ManagerDashboard: React.FC = () => {
           viewerRole="manager"
           managerBranchId={defaultBranch}
           currentUserId={currentUser?.id}
+          currentUserName={currentUser?.name}
+        />
+      )}
+
+      {/* CRM & ADMISSION LEADS TAB */}
+      {activeTab === 'crm' && (
+        <CRMManager
+          viewerRole="manager"
+          currentBranchId={defaultBranch}
+          currentUserId={currentUser?.id}
+          currentUserName={currentUser?.name}
+        />
+      )}
+
+      {/* PENDING FEES & REMINDERS TAB */}
+      {activeTab === 'pending_fees' && (
+        <PendingFeesManager
+          viewerRole="manager"
+          currentBranchId={defaultBranch}
+          currentUserName={currentUser?.name}
+        />
+      )}
+
+      {/* BRANCH OPERATING EXPENSES TAB */}
+      {activeTab === 'expenses' && (
+        <ExpenseManager
+          viewerRole="manager"
+          currentBranchId={defaultBranch}
+          currentUserName={currentUser?.name}
+        />
+      )}
+
+      {/* LMS CURRICULUM TAB */}
+      {activeTab === 'lms' && (
+        <LMSManager />
+      )}
+
+      {/* NOTICE BOARD TAB */}
+      {activeTab === 'notices' && (
+        <NoticeBoardManager
+          viewerRole="manager"
+          currentBranchId={defaultBranch}
           currentUserName={currentUser?.name}
         />
       )}

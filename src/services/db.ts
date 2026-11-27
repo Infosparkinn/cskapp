@@ -13,7 +13,19 @@ import type {
   FeePaymentRecord,
   CenterStats,
   Branch,
-  BranchId
+  BranchId,
+  Lead,
+  LeadStatus,
+  LeadSource,
+  LeadPriority,
+  LeadFollowUpRecord,
+  FeeInstallment,
+  FeeReminderLog,
+  ExpenseRecord,
+  ExpenseCategory,
+  StaffSalaryConfig,
+  SalarySlip,
+  CampusNotice
 } from '../types';
 import { syncDocumentToCloud, fetchCollectionFromCloud, subscribeToCloudCollection } from './firebase';
 import { Capacitor } from '@capacitor/core';
@@ -134,7 +146,7 @@ export const BRANCHES: Branch[] = [
   }
 ];
 
-// Storage keys (v6 - Clean state with full staff & manager leave integration)
+// Storage keys (v7 - Full ERP, CRM, LMS, IMS & Financial integration)
 const KEY_USERS = 'csk_users_v6';
 const KEY_STAFF_ATTENDANCE = 'csk_staff_attendance_v5';
 const KEY_STAFF_PERMISSIONS = 'csk_staff_permissions_v6';
@@ -143,6 +155,12 @@ const KEY_STUDENT_ATTENDANCE = 'csk_student_attendance_v5';
 const KEY_WORK_REPORTS = 'csk_work_reports_v5';
 const KEY_MANAGER_REPORTS = 'csk_manager_reports_v5';
 const KEY_COURSES = 'csk_courses_v5';
+const KEY_LEADS = 'csk_crm_leads_v1';
+const KEY_FEE_INSTALLMENTS = 'csk_fee_installments_v1';
+const KEY_FEE_REMINDERS = 'csk_fee_reminders_v1';
+const KEY_EXPENSES = 'csk_expenses_v1';
+const KEY_SALARY_SLIPS = 'csk_salary_slips_v1';
+const KEY_NOTICES = 'csk_notices_v1';
 
 // Wipe legacy test data cache
 try {
@@ -573,6 +591,327 @@ const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
 const INITIAL_WORK_REPORTS: DailyWorkReport[] = [];
 const INITIAL_STUDENT_ATTENDANCE: StudentAttendance[] = [];
 const INITIAL_MANAGER_REPORTS: ManagerDailyReport[] = [];
+
+// ==========================================
+// INITIAL CRM LEADS & INQUIRIES
+// ==========================================
+const INITIAL_LEADS: Lead[] = [
+  {
+    id: 'lead-101',
+    name: 'Karthik Raja',
+    phone: '9842155601',
+    email: 'karthik.raja@gmail.com',
+    branchId: 'dadagapatty',
+    courseId: 'crs-1',
+    courseName: 'Artificial Intelligence & Deep Learning (AI)',
+    source: 'instagram_meta',
+    status: 'follow_up',
+    priority: 'hot',
+    assignedToStaffId: 'usr-stf-3',
+    assignedToStaffName: 'Kavitha Rajan',
+    nextFollowUpDate: '2026-11-27', // Today!
+    nextFollowUpTime: '02:30 PM',
+    notes: 'Very interested in AI & Machine Learning. Inquired about weekend batch fees & placement support.',
+    followUps: [
+      {
+        id: 'fup-1',
+        date: '2026-11-24',
+        time: '11:00 AM',
+        remarks: 'Introduced curriculum and syllabus. Candidate requested syllabus brochure via WhatsApp.',
+        counselorName: 'Kavitha Rajan',
+        status: 'completed',
+        timestamp: 1794210000000
+      }
+    ],
+    createdAt: '2026-11-24',
+    updatedAt: '2026-11-24',
+    timestamp: 1794210000000
+  },
+  {
+    id: 'lead-102',
+    name: 'Saravanan Muthu',
+    phone: '9842155602',
+    email: 'saravanan.m@gmail.com',
+    branchId: 'kondalampatty',
+    courseId: 'crs-3',
+    courseName: 'Full Stack Web Development (MERN / Python)',
+    source: 'walk_in',
+    status: 'counseling',
+    priority: 'hot',
+    assignedToStaffId: 'usr-stf-3',
+    assignedToStaffName: 'Kavitha Rajan',
+    nextFollowUpDate: '2026-11-27', // Today!
+    nextFollowUpTime: '04:30 PM',
+    notes: 'Visited Salem Junction campus directly. Liked the practical lab facility. Visiting with father for registration.',
+    followUps: [
+      {
+        id: 'fup-2',
+        date: '2026-11-25',
+        time: '03:15 PM',
+        remarks: 'Direct counseling done. Demonstrated sample live project built by previous batch students.',
+        counselorName: 'Kavitha Rajan',
+        status: 'completed',
+        timestamp: 1794296400000
+      }
+    ],
+    createdAt: '2026-11-25',
+    updatedAt: '2026-11-25',
+    timestamp: 1794296400000
+  },
+  {
+    id: 'lead-103',
+    name: 'Divya Bharathi',
+    phone: '9842155603',
+    email: 'divya.b@gmail.com',
+    branchId: 'ammapet',
+    courseId: 'crs-4',
+    courseName: 'Data Science & Machine Learning with Python',
+    source: 'phone_enquiry',
+    status: 'contacted',
+    priority: 'warm',
+    assignedToStaffId: 'usr-stf-4',
+    assignedToStaffName: 'Deepak Sundaram',
+    nextFollowUpDate: '2026-11-25', // Overdue!
+    nextFollowUpTime: '11:30 AM',
+    notes: 'Working in Salem private firm. Wants evening 7 PM batch for Python Data Analytics.',
+    followUps: [],
+    createdAt: '2026-11-22',
+    updatedAt: '2026-11-22',
+    timestamp: 1794038400000
+  },
+  {
+    id: 'lead-104',
+    name: 'Prashanth Kumar',
+    phone: '9842155604',
+    email: 'prashanth.k@gmail.com',
+    branchId: 'new_bus_stand',
+    courseId: 'crs-7',
+    courseName: 'Full Stack Web Development Internship (30 Days)',
+    source: 'website',
+    status: 'new',
+    priority: 'warm',
+    nextFollowUpDate: '2026-11-28',
+    nextFollowUpTime: '10:00 AM',
+    notes: 'Final year B.Tech IT student seeking official company internship certificate and project guidance.',
+    followUps: [],
+    createdAt: '2026-11-26',
+    updatedAt: '2026-11-26',
+    timestamp: 1794382800000
+  }
+];
+
+// ==========================================
+// INITIAL FEE INSTALLMENTS
+// ==========================================
+const INITIAL_FEE_INSTALLMENTS: FeeInstallment[] = [
+  {
+    id: 'inst-101',
+    studentId: 'usr-stu-1',
+    studentName: 'Dinesh Kumar',
+    branchId: 'dadagapatty',
+    installmentNo: 1,
+    dueDate: '2026-02-01',
+    amount: 15000,
+    paidAmount: 15000,
+    status: 'paid',
+    paidDate: '2026-02-01',
+    reminderCount: 0,
+    notes: 'Initial admission fee paid via UPI'
+  },
+  {
+    id: 'inst-102',
+    studentId: 'usr-stu-1',
+    studentName: 'Dinesh Kumar',
+    branchId: 'dadagapatty',
+    installmentNo: 2,
+    dueDate: '2026-11-20', // Overdue!
+    amount: 15000,
+    paidAmount: 0,
+    status: 'overdue',
+    reminderCount: 1,
+    lastReminderSent: '2026-11-21 10:30 AM',
+    notes: '2nd installment for AI Master Course'
+  },
+  {
+    id: 'inst-103',
+    studentId: 'usr-stu-3',
+    studentName: 'Vigneshwaran P',
+    branchId: 'kondalampatty',
+    installmentNo: 1,
+    dueDate: '2026-02-10',
+    amount: 7500,
+    paidAmount: 7500,
+    status: 'paid',
+    paidDate: '2026-02-10',
+    reminderCount: 0,
+    notes: 'Initial term fee paid in Cash'
+  },
+  {
+    id: 'inst-104',
+    studentId: 'usr-stu-3',
+    studentName: 'Vigneshwaran P',
+    branchId: 'kondalampatty',
+    installmentNo: 2,
+    dueDate: '2026-11-30', // Due in 3 days!
+    amount: 7500,
+    paidAmount: 0,
+    status: 'pending',
+    reminderCount: 0,
+    notes: 'Final balance for C/C++ Data Structures'
+  }
+];
+
+// ==========================================
+// INITIAL EXPENSES
+// ==========================================
+const INITIAL_EXPENSES: ExpenseRecord[] = [
+  {
+    id: 'exp-1',
+    branchId: 'dadagapatty',
+    category: 'rent',
+    title: 'Dadagapatty Campus Building Lease Rent',
+    amount: 25000,
+    date: '2026-11-05',
+    paymentMode: 'bank_transfer',
+    paidTo: 'Salem Property Owners Trust',
+    invoiceNumber: 'INV-DDG-RENT-11',
+    approvedBy: 'Center Admin',
+    notes: 'Monthly campus premises rent',
+    timestamp: 1793860800000
+  },
+  {
+    id: 'exp-2',
+    branchId: 'dadagapatty',
+    category: 'electricity_utilities',
+    title: 'TANGEDCO Commercial Electricity Bill',
+    amount: 4850,
+    date: '2026-11-12',
+    paymentMode: 'upi',
+    paidTo: 'TANGEDCO Salem West',
+    invoiceNumber: 'EB-7849120',
+    approvedBy: 'Center Admin',
+    notes: 'Campus lighting and computer lab AC power',
+    timestamp: 1794465600000
+  },
+  {
+    id: 'exp-3',
+    branchId: 'new_bus_stand',
+    category: 'internet_telecom',
+    title: 'Airtel Xstream High-Speed Business Fiber (300 Mbps)',
+    amount: 1499,
+    date: '2026-11-10',
+    paymentMode: 'upi',
+    paidTo: 'Airtel Broadband Ltd',
+    invoiceNumber: 'AIR-9812401',
+    approvedBy: 'Branch Manager',
+    notes: 'Coding lab and student Wi-Fi connection',
+    timestamp: 1794292800000
+  },
+  {
+    id: 'exp-4',
+    branchId: 'new_bus_stand',
+    category: 'marketing_ads',
+    title: 'Meta & Instagram Ads - AI & Full Stack Admission Campaign',
+    amount: 6500,
+    date: '2026-11-15',
+    paymentMode: 'upi',
+    paidTo: 'Meta Platforms Inc',
+    invoiceNumber: 'META-SALEM-771',
+    approvedBy: 'Center Admin',
+    notes: 'Targeted campaign in Salem, Namakkal, Dharmapuri colleges',
+    timestamp: 1794724800000
+  },
+  {
+    id: 'exp-5',
+    branchId: 'kondalampatty',
+    category: 'hardware_maintenance',
+    title: 'Lab 2 Computer RAM Upgrade & Cat6 Cables',
+    amount: 3200,
+    date: '2026-11-18',
+    paymentMode: 'cash',
+    paidTo: 'Salem IT World Computer Spares',
+    invoiceNumber: 'ITW-40192',
+    approvedBy: 'Branch Manager',
+    notes: 'DDR4 8GB RAM + 50m LAN cable for testing bench',
+    timestamp: 1794984000000
+  }
+];
+
+// ==========================================
+// INITIAL SALARY SLIPS
+// ==========================================
+const INITIAL_SALARY_SLIPS: SalarySlip[] = [
+  {
+    id: 'sal-101',
+    staffId: 'usr-stf-1',
+    staffName: 'Priya Dharshini',
+    branchId: 'dadagapatty',
+    month: '2026-10',
+    baseSalary: 28000,
+    allowances: 3000,
+    workingDays: 26,
+    presentDays: 25,
+    paidLeaveDays: 1,
+    unpaidLeaveDays: 0,
+    deductions: 0,
+    netPayable: 31000,
+    status: 'paid',
+    paymentMode: 'bank_transfer',
+    paymentRef: 'NEFT-SAL-10291',
+    disbursedDate: '2026-11-02',
+    disbursedBy: 'Center Admin',
+    timestamp: 1793601600000
+  },
+  {
+    id: 'sal-102',
+    staffId: 'usr-stf-2',
+    staffName: 'Logesh Kannan',
+    branchId: 'dadagapatty',
+    month: '2026-10',
+    baseSalary: 24000,
+    allowances: 2000,
+    workingDays: 26,
+    presentDays: 26,
+    paidLeaveDays: 0,
+    unpaidLeaveDays: 0,
+    deductions: 0,
+    netPayable: 26000,
+    status: 'paid',
+    paymentMode: 'bank_transfer',
+    paymentRef: 'NEFT-SAL-10292',
+    disbursedDate: '2026-11-02',
+    disbursedBy: 'Center Admin',
+    timestamp: 1793601600000
+  }
+];
+
+// ==========================================
+// INITIAL NOTICES & ANNOUNCEMENTS
+// ==========================================
+const INITIAL_NOTICES: CampusNotice[] = [
+  {
+    id: 'not-1',
+    title: 'Salem District Academic Hackathon 2026',
+    content: 'InfoSpark Innovation & CSK Academy are hosting an Inter-Campus Hackathon on Dec 12, 2026. All Full Stack & AI students are encouraged to participate.',
+    targetRole: 'all',
+    branchId: 'all',
+    priority: 'info',
+    postedBy: 'Center Admin',
+    date: '2026-11-25',
+    timestamp: 1794296400000
+  },
+  {
+    id: 'not-2',
+    title: 'Daily Telecalling & Inquiry Follow-up Protocol',
+    content: 'All academic counselors and telecallers are reminded to log follow-up notes for every inquiry within 24 hours to maintain a high conversion rate.',
+    targetRole: 'staff',
+    branchId: 'all',
+    priority: 'urgent',
+    postedBy: 'Center Admin',
+    date: '2026-11-26',
+    timestamp: 1794382800000
+  }
+];
 
 function loadFromStorage<T>(key: string, defaultVal: T): T {
   try {
@@ -1407,6 +1746,563 @@ export const dbService = {
     }
   },
 
+  // ==========================================
+  // 1. CRM LEADS & ADMISSION FOLLOW-UP
+  // ==========================================
+  getLeads(branchId?: BranchId | 'all', status?: LeadStatus | 'all', search?: string, priority?: LeadPriority | 'all'): Lead[] {
+    let list = loadFromStorage<Lead[]>(KEY_LEADS, INITIAL_LEADS);
+    if (branchId && branchId !== 'all') {
+      list = list.filter(l => l.branchId === branchId);
+    }
+    if (status && status !== 'all') {
+      list = list.filter(l => l.status === status);
+    }
+    if (priority && priority !== 'all') {
+      list = list.filter(l => l.priority === priority);
+    }
+    if (search && search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = list.filter(l => 
+        l.name.toLowerCase().includes(q) || 
+        l.phone.includes(q) || 
+        (l.courseName && l.courseName.toLowerCase().includes(q))
+      );
+    }
+    return list.sort((a, b) => b.timestamp - a.timestamp);
+  },
+
+  getLeadById(id: string): Lead | undefined {
+    return this.getLeads().find(l => l.id === id);
+  },
+
+  addLead(lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'timestamp' | 'followUps'>): Lead {
+    const list = loadFromStorage<Lead[]>(KEY_LEADS, INITIAL_LEADS);
+    const today = getTodayDate();
+    const newLead: Lead = {
+      ...lead,
+      id: `lead-${Date.now()}`,
+      followUps: [],
+      createdAt: today,
+      updatedAt: today,
+      timestamp: Date.now()
+    };
+    list.unshift(newLead);
+    saveToStorage(KEY_LEADS, list);
+    syncDocumentToCloud('crm_leads', newLead.id, newLead);
+    return newLead;
+  },
+
+  updateLead(id: string, updates: Partial<Lead>): Lead | null {
+    const list = loadFromStorage<Lead[]>(KEY_LEADS, INITIAL_LEADS);
+    const idx = list.findIndex(l => l.id === id);
+    if (idx === -1) return null;
+    list[idx] = {
+      ...list[idx],
+      ...updates,
+      updatedAt: getTodayDate()
+    };
+    saveToStorage(KEY_LEADS, list);
+    syncDocumentToCloud('crm_leads', list[idx].id, list[idx]);
+    return list[idx];
+  },
+
+  deleteLead(id: string): boolean {
+    let list = loadFromStorage<Lead[]>(KEY_LEADS, INITIAL_LEADS);
+    const initialLen = list.length;
+    list = list.filter(l => l.id !== id);
+    if (list.length !== initialLen) {
+      saveToStorage(KEY_LEADS, list);
+      return true;
+    }
+    return false;
+  },
+
+  addLeadFollowUp(leadId: string, followUp: Omit<LeadFollowUpRecord, 'id' | 'timestamp'>, nextDate?: string, nextTime?: string, newStatus?: LeadStatus): Lead | null {
+    const list = loadFromStorage<Lead[]>(KEY_LEADS, INITIAL_LEADS);
+    const lead = list.find(l => l.id === leadId);
+    if (!lead) return null;
+    const newFup: LeadFollowUpRecord = {
+      ...followUp,
+      id: `fup-${Date.now()}`,
+      timestamp: Date.now()
+    };
+    if (!lead.followUps) lead.followUps = [];
+    lead.followUps.unshift(newFup);
+    if (nextDate) lead.nextFollowUpDate = nextDate;
+    if (nextTime) lead.nextFollowUpTime = nextTime;
+    if (newStatus) lead.status = newStatus;
+    lead.updatedAt = getTodayDate();
+
+    saveToStorage(KEY_LEADS, list);
+    syncDocumentToCloud('crm_leads', lead.id, lead);
+    return lead;
+  },
+
+  getTodayFollowUps(branchId?: BranchId | 'all'): Lead[] {
+    const today = getTodayDate();
+    let leads = this.getLeads(branchId);
+    return leads.filter(l => l.status !== 'enrolled' && l.status !== 'lost' && l.nextFollowUpDate === today);
+  },
+
+  getOverdueFollowUps(branchId?: BranchId | 'all'): Lead[] {
+    const today = getTodayDate();
+    let leads = this.getLeads(branchId);
+    return leads.filter(l => l.status !== 'enrolled' && l.status !== 'lost' && l.nextFollowUpDate && l.nextFollowUpDate < today);
+  },
+
+  convertLeadToStudent(leadId: string, studentData: { 
+    courseId: string; 
+    batchTiming?: string; 
+    totalFees: number; 
+    paidFees: number; 
+    paymentMode: PaymentMode;
+    collectedBy?: string;
+  }): { student: UserProfile; lead: Lead } | null {
+    const lead = this.getLeadById(leadId);
+    if (!lead) return null;
+
+    const course = this.getCourseById(studentData.courseId);
+    const branch = this.getBranchById(lead.branchId);
+    const pendingAmount = Math.max(0, studentData.totalFees - studentData.paidFees);
+    const feeStatus = pendingAmount === 0 ? 'paid' : studentData.paidFees > 0 ? 'partial' : 'pending';
+
+    const cleanUsername = lead.name.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(100 + Math.random() * 900);
+    const studentUser: UserProfile = {
+      id: `usr-stu-${Date.now()}`,
+      studentId: `STU-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: lead.name,
+      phone: lead.phone,
+      email: lead.email || `${cleanUsername}@cskacademy.com`,
+      username: cleanUsername,
+      password: 'student123',
+      role: 'student',
+      branchId: lead.branchId,
+      branchName: branch ? `${branch.name} - ${branch.location}` : undefined,
+      courseId: studentData.courseId,
+      courseName: course?.name || lead.courseName || 'Certificate Course',
+      batchTiming: studentData.batchTiming || '10:00 AM - 12:00 PM',
+      totalFees: studentData.totalFees,
+      paidFees: studentData.paidFees,
+      pendingFees: pendingAmount,
+      feeStatus: feeStatus,
+      lastPaymentMode: studentData.paymentMode,
+      lastPaymentCollectedBy: studentData.collectedBy || 'Branch Manager',
+      createdAt: getTodayDate(),
+      paymentHistory: studentData.paidFees > 0 ? [
+        {
+          id: `pay-${Date.now()}`,
+          amount: studentData.paidFees,
+          paymentMode: studentData.paymentMode,
+          collectedBy: studentData.collectedBy || 'Branch Manager',
+          date: getTodayDate(),
+          time: getCurrentTime(),
+          notes: 'Initial admission fee payment',
+          timestamp: Date.now()
+        }
+      ] : []
+    };
+
+    // Save student
+    const users = loadFromStorage<UserProfile[]>(KEY_USERS, INITIAL_USERS);
+    users.unshift(studentUser);
+    saveToStorage(KEY_USERS, users);
+    syncDocumentToCloud('users', studentUser.id, studentUser);
+
+    // If there is pending fee, create installment 2 automatically
+    if (pendingAmount > 0) {
+      const nextMonthDate = new Date();
+      nextMonthDate.setDate(nextMonthDate.getDate() + 30);
+      const dueDate = nextMonthDate.toISOString().split('T')[0];
+      this.addFeeInstallment({
+        studentId: studentUser.id,
+        studentName: studentUser.name,
+        branchId: studentUser.branchId || lead.branchId,
+        installmentNo: 2,
+        dueDate: dueDate,
+        amount: pendingAmount,
+        paidAmount: 0,
+        status: 'pending',
+        reminderCount: 0,
+        notes: `Balance fee for ${studentUser.courseName}`
+      });
+    }
+
+    // Mark lead as enrolled
+    const updatedLead = this.updateLead(leadId, {
+      status: 'enrolled',
+      enrolledStudentId: studentUser.id,
+      notes: `${lead.notes}\n[Enrolled as Student ${studentUser.studentId} on ${getTodayDate()}]`
+    });
+
+    return { student: studentUser, lead: updatedLead || lead };
+  },
+
+  // ==========================================
+  // 2. PENDING FEES & INSTALLMENTS
+  // ==========================================
+  getFeeInstallments(studentId?: string, branchId?: BranchId | 'all', status?: string): FeeInstallment[] {
+    let list = loadFromStorage<FeeInstallment[]>(KEY_FEE_INSTALLMENTS, INITIAL_FEE_INSTALLMENTS);
+    if (studentId && studentId !== 'all') {
+      list = list.filter(i => i.studentId === studentId);
+    }
+    if (branchId && branchId !== 'all') {
+      list = list.filter(i => i.branchId === branchId);
+    }
+    if (status && status !== 'all') {
+      list = list.filter(i => i.status === status);
+    }
+    return list.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  },
+
+  addFeeInstallment(installment: Omit<FeeInstallment, 'id'>): FeeInstallment {
+    const list = loadFromStorage<FeeInstallment[]>(KEY_FEE_INSTALLMENTS, INITIAL_FEE_INSTALLMENTS);
+    const newInst: FeeInstallment = {
+      ...installment,
+      id: `inst-${Date.now()}`
+    };
+    list.push(newInst);
+    saveToStorage(KEY_FEE_INSTALLMENTS, list);
+    syncDocumentToCloud('fee_installments', newInst.id, newInst);
+    return newInst;
+  },
+
+  updateFeeInstallment(id: string, updates: Partial<FeeInstallment>): FeeInstallment | null {
+    const list = loadFromStorage<FeeInstallment[]>(KEY_FEE_INSTALLMENTS, INITIAL_FEE_INSTALLMENTS);
+    const idx = list.findIndex(i => i.id === id);
+    if (idx === -1) return null;
+    list[idx] = { ...list[idx], ...updates };
+    saveToStorage(KEY_FEE_INSTALLMENTS, list);
+    syncDocumentToCloud('fee_installments', list[idx].id, list[idx]);
+    return list[idx];
+  },
+
+  recordFeePayment(
+    studentId: string, 
+    amount: number, 
+    paymentMode: PaymentMode, 
+    collectedBy: string, 
+    notes?: string, 
+    installmentId?: string
+  ): { student: UserProfile; record: FeePaymentRecord } | null {
+    const users = loadFromStorage<UserProfile[]>(KEY_USERS, INITIAL_USERS);
+    const student = users.find(u => u.id === studentId);
+    if (!student) return null;
+
+    const paymentRecord: FeePaymentRecord = {
+      id: `pay-${Date.now()}`,
+      amount: amount,
+      paymentMode: paymentMode,
+      collectedBy: collectedBy,
+      date: getTodayDate(),
+      time: getCurrentTime(),
+      notes: notes || 'Fee installment payment',
+      timestamp: Date.now()
+    };
+
+    if (!student.paymentHistory) student.paymentHistory = [];
+    student.paymentHistory.push(paymentRecord);
+    student.paidFees = (student.paidFees || 0) + amount;
+    student.pendingFees = Math.max(0, (student.totalFees || 0) - student.paidFees);
+    student.feeStatus = student.pendingFees === 0 ? 'paid' : 'partial';
+    student.lastPaymentMode = paymentMode;
+    student.lastPaymentCollectedBy = collectedBy;
+
+    saveToStorage(KEY_USERS, users);
+    syncDocumentToCloud('users', student.id, student);
+
+    // If installmentId was provided, update that installment
+    if (installmentId) {
+      const installments = loadFromStorage<FeeInstallment[]>(KEY_FEE_INSTALLMENTS, INITIAL_FEE_INSTALLMENTS);
+      const inst = installments.find(i => i.id === installmentId);
+      if (inst) {
+        inst.paidAmount = (inst.paidAmount || 0) + amount;
+        inst.status = inst.paidAmount >= inst.amount ? 'paid' : 'partial';
+        inst.paidDate = getTodayDate();
+        saveToStorage(KEY_FEE_INSTALLMENTS, installments);
+        syncDocumentToCloud('fee_installments', inst.id, inst);
+      }
+    }
+
+    return { student, record: paymentRecord };
+  },
+
+  logFeeReminder(reminder: Omit<FeeReminderLog, 'id' | 'timestamp' | 'sentAt'>): FeeReminderLog {
+    const list = loadFromStorage<FeeReminderLog[]>(KEY_FEE_REMINDERS, []);
+    const newLog: FeeReminderLog = {
+      ...reminder,
+      id: `frem-${Date.now()}`,
+      sentAt: `${getTodayDate()} ${getCurrentTime()}`,
+      timestamp: Date.now()
+    };
+    list.unshift(newLog);
+    saveToStorage(KEY_FEE_REMINDERS, list);
+    syncDocumentToCloud('fee_reminders', newLog.id, newLog);
+    return newLog;
+  },
+
+  getFeeReminderLogs(studentId?: string): FeeReminderLog[] {
+    let list = loadFromStorage<FeeReminderLog[]>(KEY_FEE_REMINDERS, []);
+    if (studentId && studentId !== 'all') {
+      list = list.filter(l => l.studentId === studentId);
+    }
+    return list;
+  },
+
+  generateWhatsAppReminderMessage(studentName: string, courseName: string, pendingAmount: number, dueDate?: string, branchName?: string): string {
+    const campus = branchName || 'CSK Academy & InfoSpark';
+    const dueTxt = dueDate ? `on or before *${dueDate}*` : 'at your earliest convenience';
+    return `Dear *${studentName}*,\n\nGreetings from *${campus}*! 🎓\n\nThis is a friendly reminder regarding your tuition balance of *₹${pendingAmount.toLocaleString('en-IN')}* for *${courseName}*, scheduled ${dueTxt}.\n\nYou can pay online via UPI or visit the branch office directly. For any questions or assistance, please reply to this message.\n\nThank you,\nAccount Desk, ${campus}\nPhone: +91 94432 11001`;
+  },
+
+  getPendingFeeAging(branchId?: BranchId | 'all') {
+    const students = this.getStudentList(branchId);
+    const today = new Date(getTodayDate()).getTime();
+
+    let totalPendingAmount = 0;
+    const studentsWithDues = students.filter(s => (s.pendingFees || 0) > 0);
+    studentsWithDues.forEach(s => totalPendingAmount += (s.pendingFees || 0));
+
+    const installments = this.getFeeInstallments(undefined, branchId, 'pending').concat(
+      this.getFeeInstallments(undefined, branchId, 'overdue')
+    );
+
+    const dueIn7Days: any[] = [];
+    const overdue1to15Days: any[] = [];
+    const overdue16to30Days: any[] = [];
+    const overdue30PlusDays: any[] = [];
+
+    studentsWithDues.forEach(stu => {
+      const inst = installments.find(i => i.studentId === stu.id);
+      const dueDateStr = inst?.dueDate || stu.createdAt || getTodayDate();
+      const dueTime = new Date(dueDateStr).getTime();
+      const diffDays = Math.floor((today - dueTime) / (1000 * 60 * 60 * 24));
+
+      const entry = {
+        student: stu,
+        pending: stu.pendingFees || 0,
+        course: stu.courseName || 'Course',
+        branchId: stu.branchId || 'dadagapatty',
+        dueDate: dueDateStr,
+        overdueDays: diffDays
+      };
+
+      if (diffDays < 0 && Math.abs(diffDays) <= 7) {
+        dueIn7Days.push(entry);
+      } else if (diffDays >= 0 && diffDays <= 15) {
+        overdue1to15Days.push(entry);
+      } else if (diffDays > 15 && diffDays <= 30) {
+        overdue16to30Days.push(entry);
+      } else if (diffDays > 30) {
+        overdue30PlusDays.push(entry);
+      } else {
+        dueIn7Days.push(entry);
+      }
+    });
+
+    return {
+      totalPendingAmount,
+      totalStudentsWithDues: studentsWithDues.length,
+      dueIn7Days,
+      overdue1to15Days,
+      overdue16to30Days,
+      overdue30PlusDays
+    };
+  },
+
+  // ==========================================
+  // 3. ACCOUNTING & EXPENSES
+  // ==========================================
+  getExpenses(branchId?: BranchId | 'all', month?: string, category?: string): ExpenseRecord[] {
+    let list = loadFromStorage<ExpenseRecord[]>(KEY_EXPENSES, INITIAL_EXPENSES);
+    if (branchId && branchId !== 'all') {
+      list = list.filter(e => e.branchId === branchId);
+    }
+    if (month && month !== 'all') {
+      list = list.filter(e => e.date.startsWith(month));
+    }
+    if (category && category !== 'all') {
+      list = list.filter(e => e.category === category);
+    }
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
+  addExpense(expense: Omit<ExpenseRecord, 'id' | 'timestamp'>): ExpenseRecord {
+    const list = loadFromStorage<ExpenseRecord[]>(KEY_EXPENSES, INITIAL_EXPENSES);
+    const newExp: ExpenseRecord = {
+      ...expense,
+      id: `exp-${Date.now()}`,
+      timestamp: Date.now()
+    };
+    list.unshift(newExp);
+    saveToStorage(KEY_EXPENSES, list);
+    syncDocumentToCloud('expenses', newExp.id, newExp);
+    return newExp;
+  },
+
+  deleteExpense(id: string): boolean {
+    let list = loadFromStorage<ExpenseRecord[]>(KEY_EXPENSES, INITIAL_EXPENSES);
+    const initialLen = list.length;
+    list = list.filter(e => e.id !== id);
+    if (list.length !== initialLen) {
+      saveToStorage(KEY_EXPENSES, list);
+      return true;
+    }
+    return false;
+  },
+
+  getBranchPLSummary(branchId?: BranchId | 'all', month?: string) {
+    // 1. Calculate revenue from student fees collected
+    const students = this.getStudentList(branchId);
+    let totalRevenue = 0;
+    students.forEach(s => {
+      if (s.paymentHistory) {
+        s.paymentHistory.forEach(p => {
+          if (!month || month === 'all' || p.date.startsWith(month)) {
+            totalRevenue += (p.amount || 0);
+          }
+        });
+      }
+    });
+
+    // 2. Calculate expenses
+    const expenses = this.getExpenses(branchId, month);
+    let totalExpenses = 0;
+    const categoryTotals: Record<string, number> = {};
+    expenses.forEach(e => {
+      totalExpenses += (e.amount || 0);
+      categoryTotals[e.category] = (categoryTotals[e.category] || 0) + (e.amount || 0);
+    });
+
+    const netProfit = totalRevenue - totalExpenses;
+    return {
+      totalRevenue,
+      totalExpenses,
+      netProfit,
+      categoryTotals,
+      profitMargin: totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0.0'
+    };
+  },
+
+  // ==========================================
+  // 4. PAYROLL & SALARY
+  // ==========================================
+  getSalarySlips(staffId?: string, month?: string, branchId?: BranchId | 'all'): SalarySlip[] {
+    let list = loadFromStorage<SalarySlip[]>(KEY_SALARY_SLIPS, INITIAL_SALARY_SLIPS);
+    if (staffId && staffId !== 'all') {
+      list = list.filter(s => s.staffId === staffId);
+    }
+    if (month && month !== 'all') {
+      list = list.filter(s => s.month === month);
+    }
+    if (branchId && branchId !== 'all') {
+      list = list.filter(s => s.branchId === branchId);
+    }
+    return list.sort((a, b) => b.timestamp - a.timestamp);
+  },
+
+  generateSalarySlip(staffId: string, month: string): SalarySlip | null {
+    const user = this.getUserById(staffId);
+    if (!user || user.role !== 'staff') return null;
+
+    // Check if slip already exists for this staff and month
+    const list = loadFromStorage<SalarySlip[]>(KEY_SALARY_SLIPS, INITIAL_SALARY_SLIPS);
+    const existing = list.find(s => s.staffId === staffId && s.month === month);
+    if (existing) return existing;
+
+    // Base salary benchmark based on faculty type
+    const basePay = user.jobRole === 'both' ? 28000 : user.jobRole === 'teaching' ? 24000 : 20000;
+    const allowances = 2000;
+
+    // Count present days and unpaid leaves from attendance and leaves records
+    const attendance = this.getStaffAttendance(staffId, month);
+    const presentCount = attendance.filter(a => a.status === 'present').length;
+    const halfDayCount = attendance.filter(a => a.status === 'half_day').length;
+
+    const workingDays = 26;
+    const estimatedPresent = Math.min(workingDays, Math.max(22, presentCount + halfDayCount * 0.5));
+    const unpaidDays = Math.max(0, workingDays - estimatedPresent - 1); // 1 casual leave allowed
+    const dailyRate = Math.round(basePay / workingDays);
+    const deductions = unpaidDays * dailyRate;
+    const netPayable = Math.max(0, basePay + allowances - deductions);
+
+    const newSlip: SalarySlip = {
+      id: `sal-${Date.now()}`,
+      staffId: user.id,
+      staffName: user.name,
+      branchId: user.branchId || 'dadagapatty',
+      month: month,
+      baseSalary: basePay,
+      allowances: allowances,
+      workingDays: workingDays,
+      presentDays: Math.round(estimatedPresent),
+      paidLeaveDays: 1,
+      unpaidLeaveDays: unpaidDays,
+      deductions: deductions,
+      deductionReason: unpaidDays > 0 ? `${unpaidDays} unpaid leave day(s) deducted` : undefined,
+      netPayable: netPayable,
+      status: 'approved',
+      timestamp: Date.now()
+    };
+
+    list.unshift(newSlip);
+    saveToStorage(KEY_SALARY_SLIPS, list);
+    syncDocumentToCloud('salary_slips', newSlip.id, newSlip);
+    return newSlip;
+  },
+
+  updateSalarySlipStatus(id: string, status: 'approved' | 'paid', paymentRef?: string, paymentMode?: PaymentMode | 'bank_transfer', disbursedBy?: string): SalarySlip | null {
+    const list = loadFromStorage<SalarySlip[]>(KEY_SALARY_SLIPS, INITIAL_SALARY_SLIPS);
+    const slip = list.find(s => s.id === id);
+    if (!slip) return null;
+    slip.status = status;
+    if (paymentRef) slip.paymentRef = paymentRef;
+    if (paymentMode) slip.paymentMode = paymentMode;
+    if (disbursedBy) slip.disbursedBy = disbursedBy;
+    if (status === 'paid') slip.disbursedDate = getTodayDate();
+
+    saveToStorage(KEY_SALARY_SLIPS, list);
+    syncDocumentToCloud('salary_slips', slip.id, slip);
+    return slip;
+  },
+
+  // ==========================================
+  // 5. NOTICES & ANNOUNCEMENTS
+  // ==========================================
+  getNotices(branchId?: BranchId | 'all', targetRole?: string): CampusNotice[] {
+    let list = loadFromStorage<CampusNotice[]>(KEY_NOTICES, INITIAL_NOTICES);
+    if (branchId && branchId !== 'all') {
+      list = list.filter(n => n.branchId === 'all' || n.branchId === branchId);
+    }
+    if (targetRole && targetRole !== 'all') {
+      list = list.filter(n => n.targetRole === 'all' || n.targetRole === targetRole);
+    }
+    return list.sort((a, b) => b.timestamp - a.timestamp);
+  },
+
+  addNotice(notice: Omit<CampusNotice, 'id' | 'timestamp'>): CampusNotice {
+    const list = loadFromStorage<CampusNotice[]>(KEY_NOTICES, INITIAL_NOTICES);
+    const newNotice: CampusNotice = {
+      ...notice,
+      id: `not-${Date.now()}`,
+      timestamp: Date.now()
+    };
+    list.unshift(newNotice);
+    saveToStorage(KEY_NOTICES, list);
+    syncDocumentToCloud('campus_notices', newNotice.id, newNotice);
+    return newNotice;
+  },
+
+  deleteNotice(id: string): boolean {
+    let list = loadFromStorage<CampusNotice[]>(KEY_NOTICES, INITIAL_NOTICES);
+    const initialLen = list.length;
+    list = list.filter(n => n.id !== id);
+    if (list.length !== initialLen) {
+      saveToStorage(KEY_NOTICES, list);
+      return true;
+    }
+    return false;
+  },
+
   // REAL-TIME FIRESTORE MULTI-DEVICE SYNC
   initCloudListeners(): () => void {
     const unsubUsers = subscribeToCloudCollection('users', (cloudUsers) => {
@@ -1483,6 +2379,11 @@ export const dbService = {
     localStorage.setItem(KEY_MANAGER_REPORTS, JSON.stringify(INITIAL_MANAGER_REPORTS));
     localStorage.setItem(KEY_STUDENT_ATTENDANCE, JSON.stringify(INITIAL_STUDENT_ATTENDANCE));
     localStorage.setItem(KEY_COURSES, JSON.stringify(INITIAL_COURSES));
+    localStorage.setItem(KEY_LEADS, JSON.stringify(INITIAL_LEADS));
+    localStorage.setItem(KEY_FEE_INSTALLMENTS, JSON.stringify(INITIAL_FEE_INSTALLMENTS));
+    localStorage.setItem(KEY_EXPENSES, JSON.stringify(INITIAL_EXPENSES));
+    localStorage.setItem(KEY_SALARY_SLIPS, JSON.stringify(INITIAL_SALARY_SLIPS));
+    localStorage.setItem(KEY_NOTICES, JSON.stringify(INITIAL_NOTICES));
     window.dispatchEvent(new Event('educenter-db-change'));
   }
 };

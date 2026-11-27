@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { LMSManager } from '../lms/LMSManager';
+import { NoticeBoardManager } from '../erp/NoticeBoardManager';
 import { 
   GraduationCap, 
   CreditCard, 
@@ -13,13 +15,16 @@ import {
   Mail, 
   AlertCircle,
   FileText,
-  Plus
+  Plus,
+  Layers,
+  Bell
 } from 'lucide-react';
 import { dbService, getTodayDate, getCurrentTime } from '../../services/db';
 import type { StudentAttendance } from '../../types';
 
 export const StudentDashboard: React.FC = () => {
   const { currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<'fees_attendance' | 'lms' | 'notices'>('fees_attendance');
   const [attendanceList, setAttendanceList] = useState<StudentAttendance[]>([]);
   const [todayDate, setTodayDate] = useState(getTodayDate());
   
@@ -127,10 +132,49 @@ export const StudentDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Tab switcher for Students */}
+        <div className="relative z-10 mt-5 flex items-center gap-1 bg-white/10 p-1.5 rounded-2xl max-w-fit border border-white/15">
+          <button
+            onClick={() => setActiveTab('fees_attendance')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'fees_attendance' 
+                ? 'bg-white text-blue-900 shadow-md' 
+                : 'text-blue-100 hover:text-white'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" /> Fees & Attendance
+          </button>
+          <button
+            onClick={() => setActiveTab('lms')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'lms' 
+                ? 'bg-white text-blue-900 shadow-md' 
+                : 'text-blue-100 hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" /> Course Syllabus & Materials
+          </button>
+          <button
+            onClick={() => setActiveTab('notices')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'notices' 
+                ? 'bg-white text-blue-900 shadow-md' 
+                : 'text-blue-100 hover:text-white'
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5" /> Campus Notices
+          </button>
+        </div>
       </div>
 
-      {/* Main Grid: Fees Card & Attendance System */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {activeTab === 'lms' ? (
+        <LMSManager />
+      ) : activeTab === 'notices' ? (
+        <NoticeBoardManager viewerRole="student" currentBranchId={currentUser.branchId} currentUserName={currentUser.name} />
+      ) : (
+        /* Main Grid: Fees Card & Attendance System */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left col: Fees & Course Details */}
         <div className="lg:col-span-1 space-y-6">
           {/* Fees Card */}
@@ -393,6 +437,7 @@ export const StudentDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

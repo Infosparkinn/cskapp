@@ -29,7 +29,11 @@ import {
   Trash2,
   Edit3,
   Filter,
-  Ticket
+  Ticket,
+  Bell,
+  DollarSign,
+  Package,
+  Layers
 } from 'lucide-react';
 import { StatCard } from '../common/StatCard';
 import { StaffManager } from './StaffManager';
@@ -37,6 +41,13 @@ import { StudentManager } from './StudentManager';
 import { ReportsViewer } from './ReportsViewer';
 import { ManagerManager } from './ManagerManager';
 import { LeavesPermissionsManager } from '../common/LeavesPermissionsManager';
+import { CRMManager } from '../crm/CRMManager';
+import { PendingFeesManager } from '../finance/PendingFeesManager';
+import { ExpenseManager } from '../finance/ExpenseManager';
+import { PayrollManager } from '../payroll/PayrollManager';
+import { LMSManager } from '../lms/LMSManager';
+import { IMSManager } from '../ims/IMSManager';
+import { NoticeBoardManager } from '../erp/NoticeBoardManager';
 import { dbService, getTodayDate, BRANCHES, downloadCSV } from '../../services/db';
 import { useAuth } from '../../context/AuthContext';
 import type { CenterStats, BranchId, Course, CourseType } from '../../types';
@@ -48,7 +59,22 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal }) => {
   const { currentBranch, setCurrentBranch } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'staff' | 'students' | 'courses' | 'leaves_permissions' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    | 'overview' 
+    | 'crm' 
+    | 'pending_fees' 
+    | 'expenses' 
+    | 'payroll' 
+    | 'lms' 
+    | 'ims' 
+    | 'notices' 
+    | 'managers' 
+    | 'staff' 
+    | 'students' 
+    | 'courses' 
+    | 'leaves_permissions' 
+    | 'reports'
+  >('overview');
   const [overviewDirectoryTab, setOverviewDirectoryTab] = useState<'staff' | 'students'>('staff');
   const [directorySearch, setDirectorySearch] = useState('');
   const [stats, setStats] = useState<CenterStats>(dbService.getStats(currentBranch, selectedMonth !== 'all' ? selectedMonth : undefined));
@@ -489,6 +515,76 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" /> Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('crm')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'crm' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' 
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Phone className="w-3.5 h-3.5" /> CRM & Leads
+          </button>
+          <button
+            onClick={() => setActiveTab('pending_fees')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'pending_fees' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' 
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <CreditCard className="w-3.5 h-3.5" /> Pending Fees
+          </button>
+          <button
+            onClick={() => setActiveTab('expenses')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'expenses' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' 
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5" /> Expenses (P&L)
+          </button>
+          <button
+            onClick={() => setActiveTab('payroll')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'payroll' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' 
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" /> Staff Payroll
+          </button>
+          <button
+            onClick={() => setActiveTab('lms')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'lms' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' 
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" /> LMS Curriculum
+          </button>
+          <button
+            onClick={() => setActiveTab('ims')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'ims' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' 
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Package className="w-3.5 h-3.5" /> IMS Lab Assets
+          </button>
+          <button
+            onClick={() => setActiveTab('notices')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'notices' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' 
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5" /> Notice Board
           </button>
           <button
             onClick={() => setActiveTab('managers')}
@@ -1095,6 +1191,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
             )}
           </div>
         </div>
+      )}
+
+      {/* CRM & ADMISSION LEADS TAB */}
+      {activeTab === 'crm' && (
+        <CRMManager 
+          viewerRole="admin"
+          currentBranchId={currentBranch === 'all' ? undefined : currentBranch}
+          currentUserName="Center Admin"
+        />
+      )}
+
+      {/* PENDING FEES & REMINDERS TAB */}
+      {activeTab === 'pending_fees' && (
+        <PendingFeesManager 
+          viewerRole="admin"
+          currentBranchId={currentBranch === 'all' ? undefined : currentBranch}
+          currentUserName="Center Admin"
+        />
+      )}
+
+      {/* OPERATING EXPENSES & P&L TAB */}
+      {activeTab === 'expenses' && (
+        <ExpenseManager 
+          viewerRole="admin"
+          currentBranchId={currentBranch === 'all' ? undefined : currentBranch}
+          currentUserName="Center Admin"
+        />
+      )}
+
+      {/* STAFF PAYROLL TAB */}
+      {activeTab === 'payroll' && (
+        <PayrollManager 
+          viewerRole="admin"
+          currentBranchId={currentBranch === 'all' ? undefined : currentBranch}
+          currentUserName="Center Admin"
+        />
+      )}
+
+      {/* LMS CURRICULUM TAB */}
+      {activeTab === 'lms' && (
+        <LMSManager />
+      )}
+
+      {/* IMS LAB ASSETS TAB */}
+      {activeTab === 'ims' && (
+        <IMSManager />
+      )}
+
+      {/* NOTICE BOARD TAB */}
+      {activeTab === 'notices' && (
+        <NoticeBoardManager 
+          viewerRole="admin"
+          currentBranchId={currentBranch === 'all' ? undefined : currentBranch}
+          currentUserName="Center Admin"
+        />
       )}
 
       {/* BRANCH MANAGERS TAB */}

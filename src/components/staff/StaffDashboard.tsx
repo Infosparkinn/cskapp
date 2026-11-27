@@ -3,6 +3,9 @@ import { useAuth } from '../../context/AuthContext';
 import { StaffAttendanceCard } from './StaffAttendanceCard';
 import { StaffAttendanceView } from './StaffAttendanceView';
 import { StaffDailyReportForm } from './StaffDailyReportForm';
+import { CRMManager } from '../crm/CRMManager';
+import { LMSManager } from '../lms/LMSManager';
+import { NoticeBoardManager } from '../erp/NoticeBoardManager';
 import { 
   User, 
   Phone, 
@@ -23,14 +26,16 @@ import {
   X,
   Check,
   Calendar,
-  Ticket
+  Ticket,
+  Layers,
+  Bell
 } from 'lucide-react';
 import { dbService, BRANCHES, getTodayDate } from '../../services/db';
 import type { BranchId, UserProfile } from '../../types';
 
 export const StaffDashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const [activeStaffTab, setActiveStaffTab] = useState<'work' | 'attendance' | 'students'>('work');
+  const [activeStaffTab, setActiveStaffTab] = useState<'work' | 'attendance' | 'crm' | 'lms' | 'notices' | 'students'>('work');
   
   // Branch-wise student view state
   const defaultBranch: BranchId = currentUser?.branchId || 'dadagapatty';
@@ -174,39 +179,72 @@ export const StaffDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab switcher: Daily Work vs Attendance vs Branch Students */}
-        <div className="relative z-10 mt-5 flex items-center gap-1 bg-white/10 p-1.5 rounded-2xl max-w-fit border border-white/15 flex-wrap">
+        {/* Tab switcher: Daily Work vs Attendance vs CRM vs LMS vs Notices vs Students */}
+        <div className="relative z-10 mt-5 flex items-center gap-1 bg-white/10 p-1.5 rounded-2xl max-w-full border border-white/15 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveStaffTab('work')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeStaffTab === 'work' 
                 ? 'bg-white text-blue-900 shadow-md' 
                 : 'text-blue-100 hover:text-white'
             }`}
           >
-            Daily Work & Shift Punch
+            Daily Work & Punch
           </button>
           <button
             onClick={() => setActiveStaffTab('attendance')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeStaffTab === 'attendance' 
                 ? 'bg-white text-blue-900 shadow-md' 
                 : 'text-blue-100 hover:text-white'
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
-            My Attendance & Permissions
+            Attendance & Leaves
+          </button>
+          <button
+            onClick={() => setActiveStaffTab('crm')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeStaffTab === 'crm' 
+                ? 'bg-white text-blue-900 shadow-md' 
+                : 'text-blue-100 hover:text-white'
+            }`}
+          >
+            <Phone className="w-3.5 h-3.5" />
+            CRM & Telecalling
+          </button>
+          <button
+            onClick={() => setActiveStaffTab('lms')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeStaffTab === 'lms' 
+                ? 'bg-white text-blue-900 shadow-md' 
+                : 'text-blue-100 hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            LMS Syllabus
+          </button>
+          <button
+            onClick={() => setActiveStaffTab('notices')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeStaffTab === 'notices' 
+                ? 'bg-white text-blue-900 shadow-md' 
+                : 'text-blue-100 hover:text-white'
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5" />
+            Notice Board
           </button>
           <button
             onClick={() => setActiveStaffTab('students')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeStaffTab === 'students' 
                 ? 'bg-white text-blue-900 shadow-md' 
                 : 'text-blue-100 hover:text-white'
             }`}
           >
             <GraduationCap className="w-3.5 h-3.5" />
-            Branch Students Directory ({studentsList.length})
+            Students Directory ({studentsList.length})
           </button>
         </div>
       </div>
@@ -252,6 +290,24 @@ export const StaffDashboard: React.FC = () => {
           staffId={currentUser.id}
           staffName={currentUser.name}
           branchId={currentUser.branchId}
+        />
+      ) : activeStaffTab === 'crm' ? (
+        /* Telecalling & Admission Follow-up for Staff */
+        <CRMManager 
+          viewerRole="staff"
+          currentBranchId={currentUser.branchId}
+          currentUserId={currentUser.id}
+          currentUserName={currentUser.name}
+        />
+      ) : activeStaffTab === 'lms' ? (
+        /* LMS Curriculum & Study Materials */
+        <LMSManager />
+      ) : activeStaffTab === 'notices' ? (
+        /* Campus Notices & Circulars */
+        <NoticeBoardManager 
+          viewerRole="staff"
+          currentBranchId={currentUser.branchId}
+          currentUserName={currentUser.name}
         />
       ) : (
         /* Branch-wise Student Details View for Staff */

@@ -219,3 +219,195 @@ export interface CenterStats {
   todayTotalEnquiries: number;
   todayTotalAdmissions: number;
 }
+
+// ==========================================
+// 1. CRM & ADMISSION FOLLOW-UP TYPES
+// ==========================================
+export type LeadStatus = 'new' | 'contacted' | 'counseling' | 'follow_up' | 'enrolled' | 'lost';
+export type LeadSource = 'walk_in' | 'phone_enquiry' | 'instagram_meta' | 'website' | 'referral' | 'pamphlet_camp';
+export type LeadPriority = 'hot' | 'warm' | 'cold';
+
+export interface LeadFollowUpRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  time: string; // e.g. 11:30 AM
+  remarks: string;
+  counselorName: string;
+  status: 'pending' | 'completed' | 'missed';
+  timestamp: number;
+}
+
+export interface Lead {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  branchId: BranchId;
+  courseId?: string;
+  courseName?: string;
+  source: LeadSource;
+  status: LeadStatus;
+  priority: LeadPriority;
+  assignedToStaffId?: string;
+  assignedToStaffName?: string;
+  nextFollowUpDate?: string; // YYYY-MM-DD
+  nextFollowUpTime?: string; // e.g. 03:00 PM
+  notes: string;
+  followUps: LeadFollowUpRecord[];
+  enrolledStudentId?: string;
+  createdAt: string;
+  updatedAt: string;
+  timestamp: number;
+}
+
+// ==========================================
+// 2. PENDING FEES & REMINDERS TYPES
+// ==========================================
+export interface FeeInstallment {
+  id: string;
+  studentId: string;
+  studentName: string;
+  branchId: BranchId;
+  installmentNo: number;
+  dueDate: string; // YYYY-MM-DD
+  amount: number;
+  paidAmount: number;
+  status: 'paid' | 'partial' | 'pending' | 'overdue';
+  paidDate?: string;
+  reminderCount: number;
+  lastReminderSent?: string;
+  notes?: string;
+}
+
+export interface FeeReminderLog {
+  id: string;
+  studentId: string;
+  studentName: string;
+  phone: string;
+  amountDue: number;
+  dueDate: string;
+  channel: 'whatsapp' | 'sms' | 'call';
+  messageText: string;
+  sentBy: string;
+  sentAt: string;
+  timestamp: number;
+}
+
+// ==========================================
+// 3. ACCOUNTING & EXPENSES TYPES
+// ==========================================
+export type ExpenseCategory = 
+  | 'rent'
+  | 'electricity_utilities'
+  | 'internet_telecom'
+  | 'hardware_maintenance'
+  | 'marketing_ads'
+  | 'stationery_print'
+  | 'pantry_refreshments'
+  | 'petty_cash'
+  | 'salary'
+  | 'other';
+
+export interface ExpenseRecord {
+  id: string;
+  branchId: BranchId;
+  category: ExpenseCategory;
+  title: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  paymentMode: PaymentMode | 'bank_transfer';
+  paidTo: string; // Vendor or person name
+  invoiceNumber?: string;
+  approvedBy: string;
+  notes?: string;
+  timestamp: number;
+}
+
+// ==========================================
+// 4. PAYROLL & SALARY MANAGEMENT TYPES
+// ==========================================
+export interface StaffSalaryConfig {
+  staffId: string;
+  baseSalary: number;
+  allowances: number;
+  dailyRate?: number;
+  allowedCasualLeaves: number;
+  bankAccountNumber?: string;
+  bankIfsc?: string;
+  panNumber?: string;
+}
+
+export interface SalarySlip {
+  id: string;
+  staffId: string;
+  staffName: string;
+  branchId: BranchId;
+  month: string; // YYYY-MM
+  baseSalary: number;
+  allowances: number;
+  workingDays: number;
+  presentDays: number;
+  paidLeaveDays: number;
+  unpaidLeaveDays: number;
+  deductions: number;
+  deductionReason?: string;
+  netPayable: number;
+  status: 'draft' | 'approved' | 'paid';
+  paymentMode?: PaymentMode | 'bank_transfer';
+  paymentRef?: string;
+  disbursedDate?: string;
+  disbursedBy?: string;
+  timestamp: number;
+}
+
+// ==========================================
+// 5. LMS, IMS & ERP TYPES
+// ==========================================
+export interface SyllabusModule {
+  id: string;
+  courseId: string;
+  moduleName: string;
+  topics: string[];
+  totalHours: number;
+  order: number;
+}
+
+export interface StudyMaterial {
+  id: string;
+  courseId: string;
+  courseName: string;
+  title: string;
+  description: string;
+  fileType: 'pdf' | 'link' | 'video' | 'notes';
+  url: string;
+  uploadedBy: string;
+  date: string;
+  timestamp: number;
+}
+
+export interface InventoryItem {
+  id: string;
+  branchId: BranchId;
+  itemName: string;
+  category: 'pc_hardware' | 'furniture' | 'books_kits' | 'electronics' | 'office_supplies';
+  serialNumber?: string;
+  quantity: number;
+  availableQuantity: number;
+  condition: 'working' | 'maintenance' | 'scrap';
+  purchaseDate?: string;
+  assignedTo?: string;
+  timestamp: number;
+}
+
+export interface CampusNotice {
+  id: string;
+  title: string;
+  content: string;
+  targetRole: 'all' | 'staff' | 'student' | 'manager';
+  branchId: 'all' | BranchId;
+  priority: 'info' | 'warning' | 'urgent';
+  postedBy: string;
+  date: string;
+  expiresAt?: string;
+  timestamp: number;
+}
