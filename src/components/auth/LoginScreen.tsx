@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { dbService, BRANCHES } from '../../services/db';
 import type { BranchId } from '../../types';
+import logoImg from '../../assets/logo.png';
 
 export const LoginScreen: React.FC = () => {
   const { login } = useAuth();
@@ -204,9 +205,10 @@ export const LoginScreen: React.FC = () => {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center w-20 h-20 sm:w-22 sm:h-22 rounded-3xl overflow-hidden shadow-2xl shadow-blue-500/25 border-2 border-white/20 mb-1 bg-[#091428] p-1 ring-4 ring-blue-500/10">
             <img 
-              src="/logo.png" 
+              src={logoImg} 
               alt="CSK Academy & InfoSpark Innovation Logo" 
               className="w-full h-full object-cover rounded-2xl" 
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = './logo.png'; }}
             />
           </div>
 

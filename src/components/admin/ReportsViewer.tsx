@@ -112,7 +112,7 @@ export const ReportsViewer: React.FC<{ initialBranch?: BranchId | 'all'; initial
     const rows = workReports.map(r => {
       const b = BRANCHES.find(br => br.id === r.branchId);
       const teachDetails = r.teachingItems 
-        ? r.teachingItems.map(ti => `${ti.courseName} (${ti.studentCount} students: ${ti.studentNames.join(';')}) - Topic: ${ti.topicCovered}`).join(' | ')
+        ? r.teachingItems.map(ti => `${ti.courseName} (${ti.studentCount || 0} students: ${Array.isArray(ti.studentNames) ? ti.studentNames.join(';') : ''}) - Topic: ${ti.topicCovered || ''}`).join(' | ')
         : 'N/A';
       return [
         r.id,

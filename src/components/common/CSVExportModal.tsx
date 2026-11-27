@@ -137,7 +137,7 @@ export const CSVExportModal: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
-                    {exportData.rows.slice(0, 5).map((row, rIdx) => (
+                    {(exportData.rows || []).slice(0, 5).map((row, rIdx) => (
                       <tr key={rIdx} className="hover:bg-slate-50">
                         {row.map((cell, cIdx) => (
                           <td key={cIdx} className="p-2 whitespace-nowrap text-slate-600">

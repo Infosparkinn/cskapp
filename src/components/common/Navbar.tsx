@@ -13,6 +13,7 @@ import {
   Check,
   X
 } from 'lucide-react';
+import logoImg from '../../assets/logo.png';
 
 export const Navbar: React.FC<{ onOpenCloudModal?: () => void }> = ({ onOpenCloudModal }) => {
   const { 
@@ -56,9 +57,10 @@ export const Navbar: React.FC<{ onOpenCloudModal?: () => void }> = ({ onOpenClou
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-md shadow-slate-900/20 shrink-0 border border-slate-200/80 bg-slate-900 flex items-center justify-center">
             <img 
-              src="/logo.png" 
+              src={logoImg} 
               alt="CSK Academy Logo" 
               className="w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = './logo.png'; }}
             />
           </div>
           <div className="min-w-0">

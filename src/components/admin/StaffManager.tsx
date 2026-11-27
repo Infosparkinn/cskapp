@@ -263,13 +263,13 @@ export const StaffManager: React.FC<{ initialBranch?: BranchId | 'all' }> = ({ i
                       <span className="text-emerald-700 font-bold">Admn: {latestReport.telecalling.todayAdmission}</span>
                     </div>
                   )}
-                  {latestReport?.teachingItems && (
+                  {latestReport?.teachingItems && latestReport.teachingItems.length > 0 && (
                     <div className="mt-2 text-[10px] text-slate-500 bg-emerald-50/60 p-2 rounded-xl">
                       <p className="font-semibold text-emerald-900 truncate">
-                        Taught: {latestReport.teachingItems[0]?.topicCovered}
+                        Taught: {latestReport.teachingItems[0]?.topicCovered || 'N/A'}
                       </p>
                       <p className="text-[9px] text-emerald-700">
-                        Students: {latestReport.teachingItems[0]?.studentCount} ({latestReport.teachingItems[0]?.studentNames.slice(0, 2).join(', ')})
+                        Students: {latestReport.teachingItems[0]?.studentCount || 0} {latestReport.teachingItems[0]?.studentNames && Array.isArray(latestReport.teachingItems[0].studentNames) && latestReport.teachingItems[0].studentNames.length > 0 ? `(${latestReport.teachingItems[0].studentNames.slice(0, 2).join(', ')})` : ''}
                       </p>
                     </div>
                   )}
@@ -358,7 +358,7 @@ export const StaffManager: React.FC<{ initialBranch?: BranchId | 'all' }> = ({ i
                           {rep.teachingItems && rep.teachingItems.map((item, idx) => (
                             <div key={idx} className="text-[11px] text-slate-600 bg-white p-2 rounded-lg border border-slate-100">
                               <p className="font-bold text-emerald-800">{item.courseName}</p>
-                              <p>Students ({item.studentCount}): {item.studentNames.join(', ')}</p>
+                              <p>Students ({item.studentCount || 0}): {item.studentNames && Array.isArray(item.studentNames) ? item.studentNames.join(', ') : 'N/A'}</p>
                               <p className="text-slate-500">Topic: {item.topicCovered}</p>
                             </div>
                           ))}
