@@ -479,13 +479,13 @@ export const CRMManager: React.FC<CRMManagerProps> = ({
 
       {/* PIPELINE BOARD VIEW */}
       {viewMode === 'board' && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x">
           {STAGES.map(stage => {
             const stageLeads = leads.filter(l => l.status === stage.key);
             return (
               <div 
                 key={stage.key}
-                className={`p-3.5 rounded-3xl border-2 ${stage.color} flex flex-col min-w-[280px] max-h-[750px] shadow-xs`}
+                className={`p-3.5 rounded-3xl border-2 ${stage.color} flex flex-col w-[300px] min-w-[280px] max-w-[320px] shrink-0 max-h-[750px] shadow-xs snap-start`}
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/60">
