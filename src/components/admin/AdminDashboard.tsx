@@ -644,7 +644,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenCloudModal
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            <FileText className="w-3.5 h-3.5" /> Daily Reports
+            <FileText className="w-3.5 h-3.5" /> Reports & Shift Logs
           </button>
         </div>
       </div>

@@ -18,7 +18,8 @@ import {
   Plus, 
   X, 
   TrendingDown,
-  ShieldAlert
+  ShieldAlert,
+  Bell
 } from 'lucide-react';
 import { dbService, getTodayDate, getCurrentTime } from '../../services/db';
 import type { 
@@ -53,6 +54,7 @@ export const PendingFeesManager: React.FC<PendingFeesManagerProps> = ({
   const [payNotes, setPayNotes] = useState('Installment fee collection');
 
   const [historyStudent, setHistoryStudent] = useState<UserProfile | null>(null);
+  const [showReminderLogsModal, setShowReminderLogsModal] = useState(false);
 
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -61,6 +63,7 @@ export const PendingFeesManager: React.FC<PendingFeesManagerProps> = ({
   // Aging data calculation
   const agingData = dbService.getPendingFeeAging(selectedBranch);
   const allStudents = dbService.getStudentList(selectedBranch);
+  const reminderLogs = dbService.getFeeReminderLogs();
 
   const showToast = (msg: string) => {
     setNotification(msg);
@@ -296,9 +299,19 @@ export const PendingFeesManager: React.FC<PendingFeesManagerProps> = ({
           </div>
         </div>
 
-        <span className="text-slate-500 font-bold">
-          {filteredStudents.length} Students with balance fees
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowReminderLogsModal(true)}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+            title="View all dispatched WhatsApp fee reminder notices"
+          >
+            <Bell className="w-3.5 h-3.5 text-slate-500" />
+            <span>Reminder Logs ({reminderLogs.length})</span>
+          </button>
+          <span className="text-slate-500 font-bold">
+            {filteredStudents.length} Students with balance fees
+          </span>
+        </div>
       </div>
 
       {/* Student Fees Table */}
@@ -574,6 +587,67 @@ export const PendingFeesManager: React.FC<PendingFeesManagerProps> = ({
                 className="py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
               >
                 Close Ledger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: FEE REMINDER LOGS */}
+      {showReminderLogsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Audit & Dispatch History</span>
+                <h3 className="font-black text-slate-900 text-base">WhatsApp Fee Reminder Logs</h3>
+                <p className="text-xs text-slate-400">All automated and manual fee collection reminder notifications dispatched</p>
+              </div>
+              <button 
+                onClick={() => setShowReminderLogsModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {reminderLogs.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 text-xs">
+                  No fee reminder notices dispatched yet. Use the "Remind" button next to any pending student to send a notice!
+                </div>
+              ) : (
+                reminderLogs.map(log => (
+                  <div key={log.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-slate-900">{log.studentName}</span>
+                      <span className="font-mono font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                        ₹{log.amountDue.toLocaleString('en-IN')} Due
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                      <span>Phone: {log.phone}</span>
+                      <span>• Channel: {log.channel.toUpperCase()}</span>
+                      <span>• Dispatched by: {log.sentBy}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border border-slate-100 font-mono whitespace-pre-line">
+                      {log.messageText}
+                    </p>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+                      <span>Sent on: {log.sentAt}</span>
+                      <span className="font-mono">Ref: {log.id}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end border-t border-slate-100">
+              <button
+                onClick={() => setShowReminderLogsModal(false)}
+                className="py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>
